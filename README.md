@@ -3,13 +3,13 @@
 > A macOS menu bar widget that watches herdr coding-agent workspaces for
 > bottlenecks. Space chips in the menu bar, a notch panel with tab-level
 > detail, click-to-focus on any space or tab.
-> Inspired by Codex Micro 2.
+> Inspired by Codex Micro.
 
 herdr 세션의 스페이스별 병목 상태를 맥 메뉴바와 노치 아래 패널로 보여 주는
 macOS 앱이다. 목적은 "에이전트가 병목에 빠지지 않기"다. 0.7초 간격으로
 `herdr api snapshot`을 폴링해 워크스페이스 칩을 메뉴바에 띄우고, 행을 클릭하면
 `herdr workspace focus <id>` / `herdr tab focus <tab_id>`로 포커스를 옮긴다.
-색 매핑은 Codex Micro 2에서 영감을 받았다.
+색 매핑은 Codex Micro에서 영감을 받았다.
 
 ![위젯 데모](docs/widget.gif)
 
