@@ -86,6 +86,65 @@ final class HerdrClient: @unchecked Sendable {
         )
     }
 
+    /// 작업명 폴백용으로 agents[].cwd의 git 브랜치명을 에이전트 id별로 읽는다.
+    /// 같은 cwd의 중복 조회는 한 번만 하고 비저장소·실패한 cwd는 결과에서
+    /// 빠진다. serial queue에서 순차 실행해 폴링마다 git이 병렬로 쌓이지
+    /// 않게 한다.
+    func gitBranches(of agents: [AgentSlot]) -> [String: String] {
+        var branches: [String: String] = [:]
+        var byCwd: [String: String] = [:]
+        var failedCwds: Set<String> = []
+        queue.sync {
+            for agent in agents {
+                guard let cwd = agent.cwd else { continue }
+                if let branch = byCwd[cwd] {
+                    branches[agent.id] = branch
+                } else if !failedCwds.contains(cwd) {
+                    if let branch = gitBranch(in: cwd) {
+                        byCwd[cwd] = branch
+                        branches[agent.id] = branch
+                    } else {
+                        failedCwds.insert(cwd)
+                    }
+                }
+            }
+        }
+        return branches
+    }
+
+    /// cwd 하나의 브랜치명. 1초를 넘기거나 비저장소면 nil.
+    private func gitBranch(in cwd: String) -> String? {
+        let process = Process()
+        // herdr와 달리 PATH를 탐색하지 않고 시스템 표준 경로로 고정한다(공격 면 최소화).
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.arguments = ["-C", cwd, "rev-parse", "--abbrev-ref", "HEAD"]
+        let stdout = Pipe()
+        process.standardOutput = stdout
+        process.standardError = FileHandle.nullDevice
+        let finished = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in finished.signal() }
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+        // 느린 저장소(git lock 등)가 폴링을 붙잡지 않게 1초에 끊는다.
+        if finished.wait(timeout: .now() + 1.0) == .timedOut {
+            process.terminate()
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+        // 브랜치명 한 줄이라 파이프 버퍼를 채울 수 없어 종료 후 읽어도 안전하다.
+        let branch = String(
+            data: stdout.fileHandleForReading.readDataToEndOfFile(),
+            encoding: .utf8
+        )?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let branch, !branch.isEmpty else { return nil }
+        // detached HEAD에서 rev-parse가 "HEAD"를 돌려주는데 작업명으로는
+        // 정보가 없어 없는 취급한다.
+        return branch == "HEAD" ? nil : branch
+    }
+
     /// `herdr agent focus <name>`으로 해당 에이전트 터미널에 포커스를 옮긴다.
     /// 결과 표시는 하지 않는다(위젯 범위 밖).
     func focus(agentNamed name: String) {

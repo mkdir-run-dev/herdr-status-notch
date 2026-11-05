@@ -68,13 +68,17 @@ struct TabInfo: Codable, Equatable, Identifiable {
 struct TabChip: Equatable, Identifiable {
     let tab: TabInfo
     let agents: [AgentSlot]
+    /// 에이전트 id → git 브랜치명. taskTitle(summary → 제목 휴리스틱)이 없는
+    /// 에이전트의 작업명 폴백으로만 쓴다.
+    var branches: [String: String] = [:]
 
     var id: String { tab.tabId }
 
     var status: AgentStatus { tab.status }
 
     /// 탭 안 작업요약을 심각도순, 동률은 표시 이름순으로 " · "로 잇는다.
-    /// 요약이 하나도 없으면 nil.
+    /// taskTitle이 없는 에이전트는 브랜치명으로 대체하고 둘 다 없으면 그
+    /// 에이전트는 건너뛴다. 대체할 이름이 하나도 없으면 nil.
     var taskSummary: String? {
         let titles = agents
             .sorted {
@@ -82,7 +86,7 @@ struct TabChip: Equatable, Identifiable {
                     ? $0.displayName < $1.displayName
                     : $0.status.sortRank < $1.status.sortRank
             }
-            .compactMap(\.taskTitle)
+            .compactMap { $0.taskTitle ?? branches[$0.id] }
         return titles.isEmpty ? nil : titles.joined(separator: " · ")
     }
 

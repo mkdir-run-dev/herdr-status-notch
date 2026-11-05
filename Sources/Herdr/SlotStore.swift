@@ -60,16 +60,25 @@ final class SlotStore: ObservableObject {
         // 것을 끊는다(안쪽 [weak self]와 소유권이 어긋나 경고가 난다).
         DispatchQueue.global(qos: .utility).async { [client] in
             let result = client.snapshot()
+            // 작업명 폴백용 브랜치는 살아 있는 snapshot의 신호 탭 소속
+            // 에이전트만 읽는다. 잠든 탭까지 조회하면 폴링마다 git만 늘어난다.
+            let signalTabIDs = Set(result.tabs.filter { $0.status != .idle }.map(\.tabId))
+            let branches = result.connection == .ok
+                ? client.gitBranches(
+                    of: result.agents.filter { $0.tabId.map(signalTabIDs.contains) ?? false }
+                )
+                : [:]
             Task { @MainActor in
                 // Store는 앱 델리게이트가 앱 생명주기 내내 보유해 weak 캡처가
                 // 필요 없고, 폴링 한 틱짜리 강참조는 순환을 만들지 않는다.
-                self.apply(result)
+                self.apply(result, branches: branches)
             }
         }
     }
 
     private func apply(
-        _ result: (agents: [AgentSlot], workspaces: [WorkspaceInfo], tabs: [TabInfo], connection: ConnectionState)
+        _ result: (agents: [AgentSlot], workspaces: [WorkspaceInfo], tabs: [TabInfo], connection: ConnectionState),
+        branches: [String: String]
     ) {
         pollInFlight = false
         connection = result.connection
@@ -99,7 +108,7 @@ final class SlotStore: ObservableObject {
                     .map { tab -> TabChip in
                         // tab_id 없는 에이전트는 탭 행에 넣지 않고 스페이스에만 남긴다.
                         let tabMembers = members.filter { $0.tabId == tab.tabId }
-                        return TabChip(tab: tab, agents: tabMembers)
+                        return TabChip(tab: tab, agents: tabMembers, branches: branches)
                     }
                 return SpaceChip(workspace: workspace, agents: members, tabs: tabs)
             }

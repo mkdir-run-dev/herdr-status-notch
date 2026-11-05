@@ -8,32 +8,34 @@ struct NotchPanelView: View {
     @EnvironmentObject private var store: SlotStore
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("전체 스페이스 \(store.spaces.count)")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
             Divider()
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(store.spaces) { space in
                     SpaceSectionView(space: space)
                 }
             }
         }
-        .padding(12)
-        .frame(maxWidth: NotchPanelController.panelWidth - 24)
+        .padding(.vertical, 10)
+        .frame(maxWidth: NotchPanelController.panelWidth - 16)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
 /// 스페이스 하나 = 헤더 줄(대표 상태 점·스페이스명·종류 요약) + 탭 행들.
 /// 탭 키가 없는 snapshot이면 헤더만 남는다. 신호가 없는 스페이스는 헤더에
-/// 점이 없고 섹션 전체를 옅게 표시한다.
+/// 점이 없고 섹션 전체를 옅게 표시한다. 행 여백은 드롭다운(MenuBarRootView)
+/// 과 같은 리듬(좌우 8·행 최소 높이)으로 맞춘다.
 private struct SpaceSectionView: View {
     @EnvironmentObject private var store: SlotStore
     let space: SpaceChip
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 if let status = space.worstStatus {
                     Circle()
@@ -47,11 +49,12 @@ private struct SpaceSectionView: View {
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 8)
+            .frame(minHeight: 24)
             .contentShape(Rectangle())
             .onTapGesture { store.focusWorkspace(space.id) }
             ForEach(space.tabs) { tab in
                 TabRowView(tab: tab)
-                    .padding(.leading, 8)
             }
         }
         .opacity(isAsleep ? 0.55 : 1)
@@ -89,6 +92,10 @@ private struct TabRowView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        // 좌측 여백 16 = 스페이스 헤더(8) + 탭 계층 들여쓰기(8).
+        .padding(.leading, 16)
+        .padding(.trailing, 8)
+        .frame(minHeight: 24)
         .contentShape(Rectangle())
         .onTapGesture { store.focusTab(tab.id) }
     }
