@@ -1,13 +1,25 @@
 import SwiftUI
 
-/// 노치 아래 슬롯 목록. 행을 탭하면 해당 에이전트 터미널로 포커스가 옮겨진다.
-/// 슬롯이 0개면 NotchPanelController가 패널을 숨긴다.
+/// 노치 아래 전체 에이전트 목록(잠든 스페이스 포함, idle 포함). 행을 탭하면
+/// 해당 에이전트 터미널로 포커스가 옮겨진다. 보여 줄 에이전트가 없으면
+/// NotchPanelController가 패널을 숨긴다.
 struct NotchPanelView: View {
     @EnvironmentObject private var store: SlotStore
 
+    /// 심각도(blocked → working → done → idle → unknown)순, 동률은 이름순.
+    private var agents: [AgentSlot] {
+        store.spaces
+            .flatMap(\.agents)
+            .sorted {
+                $0.status.sortRank == $1.status.sortRank
+                    ? $0.displayName < $1.displayName
+                    : $0.status.sortRank < $1.status.sortRank
+            }
+    }
+
     var body: some View {
         VStack(spacing: 6) {
-            ForEach(store.slots) { slot in
+            ForEach(agents) { slot in
                 SlotRowView(slot: slot)
                     .contentShape(Rectangle())
                     .onTapGesture { store.focus(slot) }

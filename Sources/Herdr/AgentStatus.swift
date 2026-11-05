@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// herdr가 보고하는 개별 에이전트 상태. 모르는 문자열은 unknown으로 폴백한다.
@@ -30,6 +31,18 @@ enum AgentStatus: String, CaseIterable {
         case .done: .green
         case .blocked: .orange
         case .unknown: .secondary
+        }
+    }
+
+    /// NSStatusItem 비트맵 칩용 색 표. Color.secondary를 NSColor로 변환하면
+    /// 시맨틱이 보장되지 않아 AppKit 색을 직접 지정한다.
+    var nsColor: NSColor {
+        switch self {
+        case .idle: .labelColor
+        case .working: .systemBlue
+        case .done: .systemGreen
+        case .blocked: .systemOrange
+        case .unknown: .secondaryLabelColor
         }
     }
 }

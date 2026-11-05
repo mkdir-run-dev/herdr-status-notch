@@ -1,0 +1,50 @@
+import Foundation
+
+/// `herdr api snapshot`의 workspaces 항목 하나. 디코드 경계에서 칩에 필요한
+/// 필드만 읽는다(active_tab_id·pane_count 등 나머지 키는 무시).
+struct WorkspaceInfo: Codable, Equatable, Identifiable {
+    let workspaceId: String
+    let label: String
+    let number: Int
+
+    var id: String { workspaceId }
+
+    enum CodingKeys: String, CodingKey {
+        case workspaceId = "workspace_id"
+        case label
+        case number
+    }
+}
+
+/// 워크스페이스 하나와 소속 에이전트 전원(idle 포함)을 묶은 메뉴바 칩 단위.
+/// idle뿐인 스페이스는 신호가 없어 isVisible이 거짓이 되고 메뉴바에서 숨겨진다.
+struct SpaceChip: Equatable, Identifiable {
+    let workspace: WorkspaceInfo
+    let agents: [AgentSlot]
+
+    var id: String { workspace.id }
+
+    /// idle을 제외한 신호 에이전트. 심각도(blocked → working → done → unknown)순,
+    /// 동률은 표시 이름순. sortRank는 idle(3)이 unknown(4)보다 앞지만 여기엔
+    /// idle이 없어 그대로 심각도 표로 쓴다.
+    var signalAgents: [AgentSlot] {
+        agents
+            .filter { $0.status != .idle }
+            .sorted {
+                $0.status.sortRank == $1.status.sortRank
+                    ? $0.displayName < $1.displayName
+                    : $0.status.sortRank < $1.status.sortRank
+            }
+    }
+
+    var idleAgents: [AgentSlot] {
+        agents.filter { $0.status == .idle }
+    }
+
+    /// 신호가 없으면 Int.max라 정렬에서 맨 뒤로 간다.
+    var worstRank: Int {
+        signalAgents.first?.status.sortRank ?? Int.max
+    }
+
+    var isVisible: Bool { !signalAgents.isEmpty }
+}

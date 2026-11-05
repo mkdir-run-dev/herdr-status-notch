@@ -2,7 +2,9 @@ import Foundation
 
 /// herdr CLI 실행 래퍼. 실행과 JSON 디코드를 이 경계에서 끝내고,
 /// 호출자에는 이미 정돈된 값만 넘긴다.
-final class HerdrClient {
+/// 상태가 전부 불변이거나 전용 serial queue 안에서만 바뀌어 크로스 스레드
+/// 호출이 안전하다(SlotStore가 백그라운드에서 폴링한다).
+final class HerdrClient: @unchecked Sendable {
     private let executableURL: URL
     private let timeout: TimeInterval
     private let queue = DispatchQueue(label: "local.herdr.statusnotch.client", qos: .utility)
@@ -65,26 +67,38 @@ final class HerdrClient {
         return String(data: output, encoding: .utf8)
     }
 
-    /// `herdr agent list`를 실행한다. offline이면 slots는 비어 있다.
-    func listAgents() -> (slots: [AgentSlot], connection: ConnectionState) {
+    /// `herdr api snapshot`을 실행한다. agents와 workspaces를 한 번에 얻는다.
+    /// offline이면 둘 다 비어 있다.
+    func snapshot() -> (agents: [AgentSlot], workspaces: [WorkspaceInfo], connection: ConnectionState) {
         guard
-            let json = run(["agent", "list"]),
+            let json = run(["api", "snapshot"]),
             let data = json.data(using: .utf8),
-            let decoded = try? JSONDecoder().decode(HerdrAgentListResponse.self, from: data)
+            let decoded = try? JSONDecoder().decode(HerdrSnapshotResponse.self, from: data)
         else {
             // 실행 실패·exit != 0·JSON 구조 불일치를 모두 "herdr를 못 쓴다"로 묶는다.
-            return ([], .offline)
+            return ([], [], .offline)
         }
-        return (decoded.result.agents, .ok)
+        return (decoded.result.snapshot.agents, decoded.result.snapshot.workspaces, .ok)
     }
 
     /// `herdr agent focus <name>`으로 해당 에이전트 터미널에 포커스를 옮긴다.
-    /// 결과 표시는 하지 않는다(스캐폴드 범위 밖).
+    /// 결과 표시는 하지 않는다(위젯 범위 밖).
     func focus(agentNamed name: String) {
+        spawn(["agent", "focus", name])
+    }
+
+    /// `herdr workspace focus <id>`로 워크스페이스에 포커스를 옮긴다.
+    func focus(workspaceID: String) {
+        spawn(["workspace", "focus", workspaceID])
+    }
+
+    /// 결과를 기다리지 않는 실행. 메뉴 클릭 응답성을 위해 백그라운드 큐에서만
+    /// 실행하고 결과는 폴링이 다시 반영한다.
+    private func spawn(_ arguments: [String]) {
         queue.async {
             let process = Process()
             process.executableURL = self.executableURL
-            process.arguments = ["agent", "focus", name]
+            process.arguments = arguments
             process.standardOutput = FileHandle.nullDevice
             process.standardError = FileHandle.nullDevice
             try? process.run()
