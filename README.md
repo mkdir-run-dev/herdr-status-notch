@@ -11,12 +11,6 @@ macOS 앱이다. 목적은 "에이전트가 병목에 빠지지 않기"다. 0.7�
 `herdr workspace focus <id>` / `herdr tab focus <tab_id>`로 포커스를 옮긴다.
 색 매핑은 Codex Micro에서 영감을 받았다.
 
-![위젯 데모](docs/widget.gif)
-
-위 GIF는 실사용 화면이다. 메뉴바의 스페이스 칩(상태 점 1개 + 프로젝트명)과
-노치 아래 패널(스페이스 섹션 + 탭 행)이 보이고, 작업명이 실시간으로
-나타났다 사라진다(summary 메타데이터 토큰 반영).
-
 ## 메뉴바 구성
 
 - **앱 아이콘**(MenuBarExtra). 그리드 아이콘 + 대기(idle) 인원수 뱃지.
