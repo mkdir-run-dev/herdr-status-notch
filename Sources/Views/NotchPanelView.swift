@@ -38,14 +38,14 @@ struct NotchPanelView: View {
     }
 }
 
-/// 섹션 머리 = 스페이스 라벨 + 소속 신호 에이전트 상태 점들. 신호가 없는
-/// 잠든 스페이스는 점이 없고 라벨만 옅게 남는다.
+/// 섹션 머리 = 에이전트 종류 요약 + 소속 신호 에이전트 상태 점들. 신호가
+/// 없는 잠든 스페이스는 점이 없고 라벨만 옅게 남는다.
 private struct SpaceSectionHeader: View {
     let space: SpaceChip
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(space.workspace.label)
+            Text(space.agentKindsLabel)
                 .font(.system(size: 12, weight: .semibold))
             Spacer(minLength: 0)
             HStack(spacing: 4) {

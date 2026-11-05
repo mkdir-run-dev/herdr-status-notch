@@ -51,4 +51,20 @@ struct SpaceChip: Equatable, Identifiable {
     }
 
     var isVisible: Bool { !signalAgents.isEmpty }
+
+    /// 스페이스 안 에이전트 종류 요약. "claude" 한 종류면 "claude ×3",
+    /// 섞였으면 "claude · grok". 종류를 모르면 "?".
+    var agentKindsLabel: String {
+        let known = agents.compactMap { $0.agent }.filter { !$0.isEmpty }
+        var seen: Set<String> = []
+        var kinds: [String] = []
+        for kind in known where seen.insert(kind).inserted {
+            kinds.append(kind)
+        }
+        guard !kinds.isEmpty else { return "?" }
+        if kinds.count == 1 {
+            return known.count > 1 ? "\(kinds[0]) ×\(known.count)" : kinds[0]
+        }
+        return kinds.joined(separator: " · ")
+    }
 }
