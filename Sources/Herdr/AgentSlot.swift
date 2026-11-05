@@ -15,6 +15,8 @@ struct AgentSlot: Codable, Identifiable, Equatable {
     let terminalTitle: String?
     /// 소속 워크스페이스. 스페이스 칩 그룹핑 키로 쓴다.
     let workspaceId: String?
+    /// 소속 탭. 탭 행 그룹핑 키로 쓰는데, 없는 에이전트도 있어 옵셔널이다.
+    let tabId: String?
     /// 메타데이터가 심어진 pane에만 존재하는 공식 작업명. 키 자체가 없는
     /// snapshot도 있어 통째로 옵셔널로 읽는다.
     let tokens: Tokens?
@@ -32,6 +34,7 @@ struct AgentSlot: Codable, Identifiable, Equatable {
         paneID = try container.decodeIfPresent(String.self, forKey: .paneID) ?? ""
         terminalTitle = try container.decodeIfPresent(String.self, forKey: .terminalTitle)
         workspaceId = try container.decodeIfPresent(String.self, forKey: .workspaceId)
+        tabId = try container.decodeIfPresent(String.self, forKey: .tabId)
         tokens = try container.decodeIfPresent(Tokens.self, forKey: .tokens)
     }
 
@@ -85,6 +88,7 @@ struct AgentSlot: Codable, Identifiable, Equatable {
         case paneID = "pane_id"
         case terminalTitle = "terminal_title"
         case workspaceId = "workspace_id"
+        case tabId = "tab_id"
         case tokens
     }
 
@@ -96,13 +100,15 @@ struct AgentSlot: Codable, Identifiable, Equatable {
 }
 
 /// `herdr api snapshot` 응답 래퍼(id/result.snapshot). 필요한 경로의
-/// agents·workspaces만 모델링하고 나머지 키는 Codable이 무시한다.
+/// agents·workspaces·tabs만 모델링하고 나머지 키는 Codable이 무시한다.
+/// tabs는 오래된 herdr 응답엔 키 자체가 없을 수 있어 옵셔널로 읽는다.
 /// 디코드는 HerdrClient에서만 한다.
 struct HerdrSnapshotResponse: Codable {
     struct Result: Codable {
         struct Snapshot: Codable {
             let agents: [AgentSlot]
             let workspaces: [WorkspaceInfo]
+            let tabs: [TabInfo]?
         }
         let snapshot: Snapshot
     }

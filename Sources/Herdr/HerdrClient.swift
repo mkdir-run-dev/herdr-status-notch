@@ -67,18 +67,23 @@ final class HerdrClient: @unchecked Sendable {
         return String(data: output, encoding: .utf8)
     }
 
-    /// `herdr api snapshot`을 실행한다. agents와 workspaces를 한 번에 얻는다.
-    /// offline이면 둘 다 비어 있다.
-    func snapshot() -> (agents: [AgentSlot], workspaces: [WorkspaceInfo], connection: ConnectionState) {
+    /// `herdr api snapshot`을 실행한다. agents·workspaces·tabs를 한 번에 얻는다.
+    /// offline이면 전부 비어 있다.
+    func snapshot() -> (agents: [AgentSlot], workspaces: [WorkspaceInfo], tabs: [TabInfo], connection: ConnectionState) {
         guard
             let json = run(["api", "snapshot"]),
             let data = json.data(using: .utf8),
             let decoded = try? JSONDecoder().decode(HerdrSnapshotResponse.self, from: data)
         else {
             // 실행 실패·exit != 0·JSON 구조 불일치를 모두 "herdr를 못 쓴다"로 묶는다.
-            return ([], [], .offline)
+            return ([], [], [], .offline)
         }
-        return (decoded.result.snapshot.agents, decoded.result.snapshot.workspaces, .ok)
+        return (
+            decoded.result.snapshot.agents,
+            decoded.result.snapshot.workspaces,
+            decoded.result.snapshot.tabs ?? [],
+            .ok
+        )
     }
 
     /// `herdr agent focus <name>`으로 해당 에이전트 터미널에 포커스를 옮긴다.
@@ -90,6 +95,11 @@ final class HerdrClient: @unchecked Sendable {
     /// `herdr workspace focus <id>`로 워크스페이스에 포커스를 옮긴다.
     func focus(workspaceID: String) {
         spawn(["workspace", "focus", workspaceID])
+    }
+
+    /// `herdr tab focus <tab_id>`로 탭에 포커스를 옮긴다.
+    func focus(tabID: String) {
+        spawn(["tab", "focus", tabID])
     }
 
     /// 결과를 기다리지 않는 실행. 메뉴 클릭 응답성을 위해 백그라운드 큐에서만

@@ -3,7 +3,8 @@
 herdr 세션의 스페이스별 병목 상태를 맥 메뉴바와 노치 아래 패널로 보여 주는
 macOS 앱이다. 목적은 "에이전트가 병목에 빠지지 않기"다. 0.7초 간격으로
 `herdr api snapshot`을 폴링해 워크스페이스 칩을 메뉴바에 띄우고, 행을 클릭하면
-`herdr agent focus <name>` / `herdr workspace focus <id>`로 포커스를 옮긴다.
+`herdr agent focus <name>` / `herdr workspace focus <id>` /
+`herdr tab focus <tab_id>`로 포커스를 옮긴다.
 
 ## 메뉴바 구성
 
@@ -26,7 +27,7 @@ macOS 시맨틱 색을 그대로 쓴다(브랜드 색 아님). 칩에는 idle �
 | done | 초록 |
 | blocked | 호박(주황) |
 | unknown(모르는 값 폴백) | 회색 |
-| idle | 흰색(노치 패널 행 전용) |
+| idle | 회색(노치 패널 탭 점 전용) |
 | herdr 오프라인 | 빨강 |
 
 ## 앱 아이콘 드롭다운
@@ -44,8 +45,8 @@ macOS 시맨틱 색을 그대로 쓴다(브랜드 색 아님). 칩에는 idle �
 작업명은 두 단계로 얻는다. 에이전트 시작 시 심은 공식 메타데이터
 (`herdr pane report-metadata <pane> --source <source> --token summary="..."`)
 가 있으면 그 값을 쓰고, 없으면 터미널 제목에서 상태 글리프(✳ ◑ ◐)와
-도구 이름("Claude Code" 등)을 걸러 얻는다. 노치 패널 행과 칩 클릭 메뉴에서
-"이름 — 작업명"으로 보여 준다.
+도구 이름("Claude Code" 등)을 걸러 얻는다. 노치 패널 탭 행(탭명 옆에)과 칩
+클릭 메뉴에서 보여 준다.
 
 ## 칩 사라짐 기준
 
@@ -55,11 +56,18 @@ done은 herdr 설계상 사용자가 해당 에이전트를 확인하면 idle로
 
 ## 노치 패널
 
-스페이스별 섹션으로 구성한다(헤더 "전체 스페이스 N" + 각 스페이스 라벨과
-신호 점, 소속 에이전트 전원을 심각도순으로). 행은 상태 점 · 이름 ·
-프로젝트 · 작업명. 토글(`UserDefaults`의 `notchPanelEnabled`, 기본 켜짐)로
-표시를 끄면 패널을 만들지도 않는다. 패널의 빈 영역을 드래그해 옮길 수 있고
-위치는 `UserDefaults`의 `notchPanelOrigin`에 저장돼 다음 실행에 복원된다.
+스페이스별 섹션으로 구성한다(헤더 "전체 스페이스 N" + 각 스페이스 섹션).
+스페이스 섹션은 헤더 줄(대표 상태 점 · 스페이스명 · 에이전트 종류 요약)과
+그 아래 탭 행들로 이뤄진다. 탭은 herdr 위계(스페이스 > 탭 > 패널)의 중간
+단위로 패널(pane) 여럿을 품을 수 있다. 탭 행은 상태 점 · 탭명 · 작업명 ·
+모델 종류를 한 줄로 보여 준다(작업명·모델은 탭 소속 에이전트에서 모은다).
+탭 행을 클릭하면 `herdr tab focus <tab_id>`로, 섹션 헤더를 클릭하면
+`herdr workspace focus`로 포커스가 옮겨진다. 탭 점은 탭 단위
+agent_status를 쓰며 idle 탭은 회색 점으로 구분한다. 신호가 없는 잠든
+스페이스는 섹션 전체가 옅게 표시된다. 토글(`UserDefaults`의
+`notchPanelEnabled`, 기본 켜짐)로 표시를 끄면 패널을 만들지도 않는다.
+패널의 빈 영역을 드래그해 옮길 수 있고 위치는 `UserDefaults`의
+`notchPanelOrigin`에 저장돼 다음 실행에 복원된다.
 
 ## 요구 사항
 
@@ -101,7 +109,7 @@ xcodebuild -project HerdrStatusNotch.xcodeproj -scheme HerdrStatusNotch -configu
 ## 구조
 
 - `Sources/App` — 앱 진입(MenuBarExtra)과 NSPanel·NSStatusItem 생명주기 담당 AppDelegate
-- `Sources/Herdr` — herdr CLI 클라이언트, 데이터 모델(AgentSlot·WorkspaceInfo·SpaceChip·AgentStatus), 폴링 저장소
+- `Sources/Herdr` — herdr CLI 클라이언트, 데이터 모델(AgentSlot·WorkspaceInfo·TabInfo·SpaceChip·AgentStatus), 폴링 저장소
 - `Sources/ChipBar` — 메뉴바 스페이스 칩(NSStatusItem diff 관리)과 스페이스 메뉴
 - `Sources/NotchPanel` — 드래그 가능한 NSPanel과 배치 컨트롤러
 - `Sources/Views` — 노치 패널 뷰, 앱 아이콘 드롭다운 뷰

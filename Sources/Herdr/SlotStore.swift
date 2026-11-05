@@ -69,7 +69,7 @@ final class SlotStore: ObservableObject {
     }
 
     private func apply(
-        _ result: (agents: [AgentSlot], workspaces: [WorkspaceInfo], connection: ConnectionState)
+        _ result: (agents: [AgentSlot], workspaces: [WorkspaceInfo], tabs: [TabInfo], connection: ConnectionState)
     ) {
         pollInFlight = false
         connection = result.connection
@@ -93,7 +93,15 @@ final class SlotStore: ObservableObject {
             .sorted { $0.number < $1.number }
             .map { workspace -> SpaceChip in
                 let members = agents.filter { $0.workspaceId == workspace.id }
-                return SpaceChip(workspace: workspace, agents: members)
+                let tabs = result.tabs
+                    .filter { $0.workspaceId == workspace.id }
+                    .sorted { $0.number < $1.number }
+                    .map { tab -> TabChip in
+                        // tab_id 없는 에이전트는 탭 행에 넣지 않고 스페이스에만 남긴다.
+                        let tabMembers = members.filter { $0.tabId == tab.tabId }
+                        return TabChip(tab: tab, agents: tabMembers)
+                    }
+                return SpaceChip(workspace: workspace, agents: members, tabs: tabs)
             }
 
         let visible = spaces
@@ -124,5 +132,9 @@ final class SlotStore: ObservableObject {
 
     func focusWorkspace(_ id: String) {
         client.focus(workspaceID: id)
+    }
+
+    func focusTab(_ id: String) {
+        client.focus(tabID: id)
     }
 }
