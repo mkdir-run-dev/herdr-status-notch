@@ -3,14 +3,36 @@ import Foundation
 /// `herdr agent list` 응답의 agents 항목 하나. JSON 원문은 이 경계에서
 /// 끝내고, 뷰는 계산 속성 status만 본다.
 struct AgentSlot: Codable, Identifiable, Equatable {
-    let name: String
+    let name: String?
+    let agent: String?
     /// agent_status 원문 문자열. 모르는 값도 그대로 보존해 디버깅에 쓴다.
     let agentStatus: String
     let cwd: String?
     let focused: Bool
+    let terminalID: String?
+    /// 식별자 최종 폴백. 없으면 빈 문자열로 수렴한다.
+    let paneID: String
     let terminalTitle: String?
 
-    var id: String { name }
+    /// 실측에서 name 키 자체가 없는 항목이 있었다. 키 구성이 에이전트마다
+    /// 가변이라 모든 필드를 decodeIfPresent로 읽는다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        agent = try container.decodeIfPresent(String.self, forKey: .agent)
+        agentStatus = try container.decodeIfPresent(String.self, forKey: .agentStatus) ?? ""
+        cwd = try container.decodeIfPresent(String.self, forKey: .cwd)
+        focused = try container.decodeIfPresent(Bool.self, forKey: .focused) ?? false
+        terminalID = try container.decodeIfPresent(String.self, forKey: .terminalID)
+        paneID = try container.decodeIfPresent(String.self, forKey: .paneID) ?? ""
+        terminalTitle = try container.decodeIfPresent(String.self, forKey: .terminalTitle)
+    }
+
+    /// name이 없는 항목은 terminal_id로, 그마저 없으면 pane_id로 식별한다.
+    var id: String { name ?? terminalID ?? paneID }
+
+    /// name → agent → "unnamed" 순으로 표시 이름을 정한다.
+    var displayName: String { name ?? agent ?? "unnamed" }
 
     /// 모르는 agent_status 값은 unknown으로 폴백한다.
     var status: AgentStatus {
@@ -19,9 +41,12 @@ struct AgentSlot: Codable, Identifiable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case name
+        case agent
         case agentStatus = "agent_status"
         case cwd
         case focused
+        case terminalID = "terminal_id"
+        case paneID = "pane_id"
         case terminalTitle = "terminal_title"
     }
 }

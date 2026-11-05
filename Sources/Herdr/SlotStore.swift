@@ -64,13 +64,16 @@ final class SlotStore: ObservableObject {
         let sorted = result.slots.sorted { lhs, rhs in
             let left = lhs.status.sortRank
             let right = rhs.status.sortRank
-            return left == right ? lhs.name < rhs.name : left < right
+            return left == right ? lhs.displayName < rhs.displayName : left < right
         }
         slots = Array(sorted.prefix(Self.maxSlots))
         overflowCount = max(0, sorted.count - Self.maxSlots)
     }
 
     func focus(_ slot: AgentSlot) {
-        client.focus(agentNamed: slot.name)
+        // herdr agent focus는 name을 인자로 받는다. name 없는 슬롯은
+        // 지목할 대상이 없어 탭해도 아무 일도 하지 않는다.
+        guard let name = slot.name else { return }
+        client.focus(agentNamed: name)
     }
 }

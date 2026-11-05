@@ -28,7 +28,7 @@ struct SlotRowView: View {
             Circle()
                 .fill(slot.status.color)
                 .frame(width: 8, height: 8)
-            Text(slot.name)
+            Text(slot.displayName)
                 .font(.system(size: 12, weight: .semibold))
             if let title = slot.terminalTitle {
                 Text(title)

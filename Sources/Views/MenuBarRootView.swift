@@ -49,7 +49,7 @@ private struct MenuSlotRowView: View {
                 Circle()
                     .fill(slot.status.color)
                     .frame(width: 7, height: 7)
-                Text(slot.name)
+                Text(slot.displayName)
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 if let title = slot.terminalTitle {
