@@ -1,5 +1,9 @@
 # Herdr Status Notch
 
+> A macOS menu bar widget that watches herdr coding-agent workspaces for
+> bottlenecks. Space chips in the menu bar, a notch panel with tab-level
+> detail, click-to-focus on any space, tab, or agent.
+
 herdr 세션의 스페이스별 병목 상태를 맥 메뉴바와 노치 아래 패널로 보여 주는
 macOS 앱이다. 목적은 "에이전트가 병목에 빠지지 않기"다. 0.7초 간격으로
 `herdr api snapshot`을 폴링해 워크스페이스 칩을 메뉴바에 띄우고, 행을 클릭하면
@@ -11,10 +15,10 @@ macOS 앱이다. 목적은 "에이전트가 병목에 빠지지 않기"다. 0.7�
 - **앱 아이콘**(MenuBarExtra). 그리드 아이콘 + 대기(idle) 인원수 뱃지.
   0명이면 숫자가 없고, herdr가 오프라인이면 아이콘이 빨간색이다.
 - **스페이스 칩**(NSStatusItem). 신호(blocked·working·done·unknown)가 있는
-  워크스페이스만 캡슐 칩으로 뜬다. 칩 안에는 상태 점들과 워크스페이스 라벨이
-  들어가고 idle뿐인 잠든 스페이스는 숨겨진다. 정렬은 심각도
-  (blocked → working → done → unknown)순, 동률은 워크스페이스 번호순이며
-  상한 8개, 초과분은 드롭다운에 "+N more"로 표시된다. 칩을 클릭하면 소속
+  워크스페이스만 캡슐 칩으로 뜬다. 칩은 스페이스 최악 상태 점 1개와
+  워크스페이스 라벨로 구성되고 idle뿐인 잠든 스페이스는 숨겨진다. 정렬은
+  심각도(blocked → working → done → unknown)순, 동률은 워크스페이스 번호순,
+  상한 8개(초과분은 드롭다운 스페이스 지도에서 확인). 칩을 클릭하면 소속
   에이전트 전원(idle 포함)과 "스페이스 포커스" 메뉴가 뜬다.
 
 ## 상태 색
@@ -103,8 +107,27 @@ xcodebuild -project HerdrStatusNotch.xcodeproj -scheme HerdrStatusNotch -configu
 - 상태 갱신은 폴링(0.7초) 전용이다. 이벤트 스트림이나 웹소켓 구독이 없다.
 - 노치 실측 좌표 기반 배치가 없다(저장 위치가 없으면 상단 중앙 고정).
 - focus 명령의 성공/실패 피드백이 없다.
-- 작업명은 터미널 제목 휴리스틱이라 도구 이름만 띄우는 에이전트는
-  작업명이 비게 된다. herdr가 작업 설명 필드를 주면 그걸로 바꾼다.
+- 작업명은 summary 토큰·터미널 제목·git 브랜치 어느 것도 없으면 비게 된다.
+
+## 성능 (실측)
+
+- 폴링 한 주기(0.7초)의 비용. `herdr api snapshot` 1회 약 5ms, git 브랜치
+  조회는 서로 다른 cwd당 약 19ms(신호 탭 소속 에이전트만, 같은 cwd는 한 번).
+  모두 백그라운드 큐에서 순차 실행되고 응답이 늦으면 다음 틱을 건너뛴다.
+- 메뉴바 칩은 내용이 바뀐 것만 다시 그린다. NSStatusItem 생성·삭제는
+  스페이스 구성이 바뀔 때만 일어난다.
+
+## 보안
+
+- 네트워크 송수신이 없다. 디스크 쓰기는 UserDefaults 두 키(패널 토글·좌표)뿐이다.
+- 모든 외부 프로세스 실행은 인자 배열 전달(셸 없음). herdr는 PATH 순회 후
+  고정 폴백 경로, git은 /usr/bin/git 고정. 명령어 주입 경로가 없다.
+- 외부 입력(herdr JSON)은 디코드 경계 한 곳에서만 파싱하고 전 필드를
+  옵셔널로 읽는다(키 가변성 대응).
+
+## 라이선스
+
+MIT
 
 ## 구조
 
