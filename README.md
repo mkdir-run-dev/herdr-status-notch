@@ -46,18 +46,23 @@ macOS 시맨틱 색을 그대로 쓴다(브랜드 색 아님). 칩에는 idle �
 정보 단위는 스페이스 하나다(에이전트는 칩·패널의 드릴다운 디테일).
 
 1. herdr 오프라인이면 첫 행에 빨간 경고.
-2. 스페이스 지도. 전체 스페이스를 띄우고 각 행은 상태 점 다발 + 라벨.
-   잠든 스페이스(전원 idle)는 흐리게 + "대기" 태그. 클릭하면 그 스페이스로
-   포커스(`herdr workspace focus`).
+2. 스페이스 지도. 전체 스페이스를 띄우고 각 행은 상태 점 1개(스페이스
+   최악 상태) + 라벨. 잠든 스페이스(전원 idle)는 흐리게 + "대기" 태그.
+   클릭하면 그 스페이스로 포커스(`herdr workspace focus`).
 3. 노치 패널 토글, 로그인 시 시작 토글(스위치)과 종료.
 
 ## 작업명 표시
 
-작업명은 두 단계로 얻는다. 에이전트 시작 시 심은 공식 메타데이터
-(`herdr pane report-metadata <pane> --source <source> --token summary="..."`)
-가 있으면 그 값을 쓰고, 없으면 터미널 제목에서 상태 글리프(✳ ◑ ◐)와
-도구 이름("Claude Code" 등)을 걸러 얻는다. 노치 패널 탭 행(탭명 옆에)과 칩
-클릭 메뉴에서 보여 준다.
+작업명은 세 단계 폴백으로 얻는다.
+
+1. 에이전트 시작 시 심은 공식 메타데이터
+   (`herdr pane report-metadata <pane> --source <source> --token summary="..."`).
+2. 터미널 제목에서 상태 글리프(✳ ◑ ◐)와 도구 이름("Claude Code" 등)을
+   걸러낸 값.
+3. 에이전트 cwd의 git 브랜치명(`/usr/bin/git rev-parse --abbrev-ref HEAD`,
+   신호 탭 소속만 조회).
+
+노치 패널 탭 행에서 탭명 옆에 보여 준다.
 
 ## 칩 사라짐 기준
 
@@ -113,9 +118,9 @@ accessory 전환) 런치패드에는 아이콘이 노출된다.
 
 ## 권한 안내
 
-- `herdr agent focus`가 터미널 창 전환에 AppleScript/System Events를 쓰면
-  macOS가 접근성 권한을 요구할 수 있다. 시스템 설정 → 개인 정보 보호 및
-  보안 → 접근성에서 이 앱을 허용한다.
+- focus 계열 명령(`workspace focus`·`tab focus`)의 창 전환이
+  AppleScript/System Events를 쓰면 macOS가 접근성 권한을 요구할 수 있다.
+  시스템 설정 → 개인 정보 보호 및 보안 → 접근성에서 이 앱을 허용한다.
 - 폴링은 읽기 전용 `herdr api snapshot`만 실행하므로 별도 권한이 필요 없다.
 - 로그인 시 시작은 드롭다운에서 켠다(SMAppService, 응용 프로그램 폴더에
   설치된 상태여야 등록이 유지된다).
@@ -151,6 +156,6 @@ MIT
 
 - `Sources/App` — 앱 진입(MenuBarExtra)과 NSPanel·NSStatusItem 생명주기 담당 AppDelegate
 - `Sources/Herdr` — herdr CLI 클라이언트, 데이터 모델(AgentSlot·WorkspaceInfo·TabInfo·SpaceChip·AgentStatus), 폴링 저장소
-- `Sources/ChipBar` — 메뉴바 스페이스 칩(NSStatusItem diff 관리)과 스페이스 메뉴
+- `Sources/ChipBar` — 메뉴바 스페이스 칩(NSStatusItem diff 관리). 클릭 시 곧바로 스페이스 포커스
 - `Sources/NotchPanel` — 드래그 가능한 NSPanel과 배치 컨트롤러
 - `Sources/Views` — 노치 패널 뷰, 앱 아이콘 드롭다운 뷰
