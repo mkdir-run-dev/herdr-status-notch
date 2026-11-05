@@ -61,22 +61,31 @@ macOS 시맨틱 색을 그대로 쓴다(브랜드 색 아님). 칩에는 idle �
 ## 칩 사라짐 기준
 
 스페이스에 신호(blocked·working·done·unknown)가 없으면 칩이 즉시 숨겨진다.
-done은 herdr 설계상 사용자가 해당 에이전트를 확인하면 idle로 전환되므로,
-확인이 곧 칩 소멸의 방아쇠다. 별도 타이머가 없다.
+done은 herdr 설계상 사용자가 해당 에이전트를 확인하면 idle로 전환된다.
+확인한 순간 신호가 사라지고 칩이 숨겨지므로, 사라지는 시점은 전적으로
+사용자 확인이 결정한다. 별도 타임아웃은 없다.
 
 ## 노치 패널
 
-스페이스별 섹션으로 구성한다(헤더 "전체 스페이스 N" + 각 스페이스 섹션).
-스페이스 섹션은 헤더 줄(대표 상태 점 · 스페이스명 · 에이전트 종류 요약)과
-그 아래 탭 행들로 이뤄진다. 탭은 herdr 위계(스페이스 > 탭 > 패널)의 중간
-단위로 패널(pane) 여럿을 품을 수 있다. 탭 행은 상태 점 · 탭명 · 작업명 ·
-모델 종류를 한 줄로 보여 준다(작업명·모델은 탭 소속 에이전트에서 모은다).
-탭 행을 클릭하면 `herdr tab focus <tab_id>`로, 섹션 헤더를 클릭하면
-`herdr workspace focus`로 포커스가 옮겨진다. 탭 점은 탭 단위
-agent_status를 쓰며 idle 탭은 회색 점으로 구분한다. 신호가 없는 잠든
-스페이스는 섹션 전체가 옅게 표시된다. 토글(`UserDefaults`의
-`notchPanelEnabled`, 기본 켜짐)로 표시를 끄면 패널을 만들지도 않는다.
-패널의 빈 영역을 드래그해 옮길 수 있고 위치는 `UserDefaults`의
+패널은 스페이스별 섹션으로 구성한다. 맨 위에 "전체 스페이스 N" 헤더가 있고
+그 아래 각 스페이스 섹션이 온다.
+
+스페이스 섹션은 헤더 줄과 탭 행들로 이뤄진다. 헤더 줄은 대표 상태 점,
+스페이스명, 에이전트 종류 요약을 보여 준다. 그 아래 탭 행이 붙는다. 탭은
+herdr 위계(스페이스 > 탭 > 패널)의 중간 단위이고 한 탭이 패널(pane) 여럿을
+담을 수 있다. 탭 행은 상태 점, 탭명, 작업명, 모델 종류를 한 줄에 보여 준다.
+작업명과 모델은 탭 소속 에이전트에서 모은다.
+
+클릭 동작은 두 가지다. 탭 행을 클릭하면 `herdr tab focus <tab_id>`로 그
+탭으로 이동한다. 섹션 헤더를 클릭하면 `herdr workspace focus`로 스페이스
+전체로 이동한다.
+
+상태 표시 규칙. 탭 점은 탭 단위 agent_status를 쓰고 idle 탭은 회색 점으로
+구분한다. 신호가 없는 잠든 스페이스는 섹션 전체를 옅게 그린다.
+
+패널 자체는 드롭다운의 스위치로 끄고 켠다(`UserDefaults`의
+`notchPanelEnabled`, 기본 켜짐). 끈 동안에는 패널을 만들지 않는다. 패널의
+빈 영역을 드래그해 옮길 수 있고 위치는 `UserDefaults`의
 `notchPanelOrigin`에 저장돼 다음 실행에 복원된다.
 
 ## 요구 사항
@@ -148,8 +157,8 @@ MIT
 
 ## 구조
 
-- `Sources/App` — 앱 진입(MenuBarExtra)과 NSPanel·NSStatusItem 생명주기 담당 AppDelegate
-- `Sources/Herdr` — herdr CLI 클라이언트, 데이터 모델(AgentSlot·WorkspaceInfo·TabInfo·SpaceChip·AgentStatus), 폴링 저장소
-- `Sources/ChipBar` — 메뉴바 스페이스 칩(NSStatusItem diff 관리). 클릭 시 곧바로 스페이스 포커스
-- `Sources/NotchPanel` — 드래그 가능한 NSPanel과 배치 컨트롤러
-- `Sources/Views` — 노치 패널 뷰, 앱 아이콘 드롭다운 뷰
+- **Sources/App.** 앱 진입(MenuBarExtra)과 NSPanel·NSStatusItem 생명주기를 담당하는 AppDelegate.
+- **Sources/Herdr.** herdr CLI 클라이언트, 데이터 모델(AgentSlot·WorkspaceInfo·TabInfo·SpaceChip·AgentStatus), 폴링 저장소.
+- **Sources/ChipBar.** 메뉴바 스페이스 칩. NSStatusItem을 workspace id로 diff 관리하고 클릭 시 곧바로 스페이스 포커스를 실행한다.
+- **Sources/NotchPanel.** 드래그로 옮길 수 있는 NSPanel과 위치 컨트롤러.
+- **Sources/Views.** 노치 패널 뷰와 앱 아이콘 드롭다운 뷰.
