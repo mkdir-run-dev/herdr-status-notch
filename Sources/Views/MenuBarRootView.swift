@@ -43,20 +43,38 @@ struct MenuBarRootView: View {
             }
 
             Divider()
-            Toggle("노치 패널", isOn: $store.notchPanelEnabled)
-                .toggleStyle(.switch)
-            Toggle("로그인 시 시작", isOn: $startsAtLogin)
-                .toggleStyle(.switch)
-                .onAppear { startsAtLogin = LoginItemService.shared.isEnabled }
-                .onChange(of: startsAtLogin) { _, on in
-                    LoginItemService.shared.setEnabled(on)
+            VStack(alignment: .leading, spacing: 2) {
+                // 라벨은 좌측, 스위치는 우측 끝('대기' 태그와 같은 결)에 둔다.
+                HStack {
+                    Text("노치 패널").font(.system(size: 13))
+                    Spacer(minLength: 8)
+                    Toggle("", isOn: $store.notchPanelEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
                 }
-            Button("종료") {
-                NSApplication.shared.terminate(nil)
+                HStack {
+                    Text("로그인 시 시작").font(.system(size: 13))
+                    Spacer(minLength: 8)
+                    Toggle("", isOn: $startsAtLogin)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .onAppear { startsAtLogin = LoginItemService.shared.isEnabled }
+                        .onChange(of: startsAtLogin) { _, on in
+                            LoginItemService.shared.setEnabled(on)
+                        }
+                }
+                Button {
+                    NSApplication.shared.terminate(nil)
+                } label: {
+                    // 누를 수 있는 행은 비활성 회색이 아니라 기본 색으로.
+                    Text("종료")
+                        .font(.system(size: 13))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(RowButtonStyle())
+                .keyboardShortcut("q")
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .keyboardShortcut("q")
+            .padding(.horizontal, 8)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
