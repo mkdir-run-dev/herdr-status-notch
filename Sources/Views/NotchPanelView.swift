@@ -27,13 +27,12 @@ struct NotchPanelView: View {
 }
 
 /// 스페이스 하나 = 1호선(대표 상태 점·스페이스명·종류 요약) + 2호선(작업요약).
-/// 신호가 없는 스페이스는 점·요약이 없어 이름만 남는다. 유예 칩도 패널에서는
-/// 점 없음과 같으니 1호선만 있고, 잠든(비유예) 스페이스만 옅게 표시한다.
+/// 신호가 없는 스페이스는 점·요약이 없어 이름만 남고 옅게 표시한다.
 private struct SpaceRowView: View {
     let space: SpaceChip
 
     private var isAsleep: Bool {
-        space.signalAgents.isEmpty && !space.inGrace
+        space.signalAgents.isEmpty
     }
 
     var body: some View {

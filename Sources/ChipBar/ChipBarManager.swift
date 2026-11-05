@@ -68,13 +68,9 @@ final class ChipBarManager: NSObject {
     /// 점은 worstStatus(심각도순 첫 신호 에이전트) 하나뿐이다.
     private func renderChip(_ chip: SpaceChip, appearance: NSAppearance) -> NSImage {
         let font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        // 유예 칩은 방금 신호가 사라진 직후라 상태를 단정할 점이 없다.
-        // 라벨만 옅게 남겨 꺼져 가는 중임을 보여 준다.
         let labelAttributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: chip.inGrace
-                ? NSColor.secondaryLabelColor
-                : NSColor.labelColor,
+            .foregroundColor: NSColor.labelColor,
         ]
         let label = chip.workspace.label as NSString
         let labelSize = label.size(withAttributes: labelAttributes)

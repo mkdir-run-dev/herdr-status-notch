@@ -9,8 +9,6 @@ final class SlotStore: ObservableObject {
     static let maxChips = 8
     static let pollInterval: TimeInterval = 0.7
     static let notchPanelEnabledKey = "notchPanelEnabled"
-    /// 스페이스에서 신호가 사라진 뒤 칩을 붙잡아 두는 유예 시간.
-    static let chipGraceInterval: TimeInterval = 180
 
     /// 전체 스페이스(잠든 스페이스 포함). 드롭다운 전체 목록용. number순.
     @Published private(set) var spaces: [SpaceChip] = []
@@ -32,9 +30,6 @@ final class SlotStore: ObservableObject {
     private let client: HerdrClient
     private var timer: Timer?
     private var pollInFlight = false
-    /// 스페이스별 마지막 신호 시각. 폴링 한 틱 사이에 에이전트 목록이
-    /// 잠시 비면 칩이 깜빡이며 사라지는 것을 유예로 막는다.
-    private var lastSignalAt: [String: Date] = [:]
 
     init(client: HerdrClient = HerdrClient()) {
         self.client = client
@@ -82,17 +77,14 @@ final class SlotStore: ObservableObject {
         if result.connection == .offline {
             // 오프라인에서는 마지막 상태를 믿을 수 없어 버린다. 칩이 0이 되면
             // 메뉴바엔 앱 아이콘만 남고 드롭다운 첫 행에 빨간 경고가 뜬다.
-            // 유예 시각도 믿을 수 없어 함께 지운다.
             spaces = []
             chips = []
             idleAgents = []
             overflowCount = 0
-            lastSignalAt.removeAll()
             return
         }
 
         let agents = result.agents
-        let now = Date()
         // workspaces가 그룹핑의 진실 원본이라 여기에 없는 workspace_id의
         // 에이전트는 칩에 못 들어간다. idle이면 대기 목록에라도 남는다.
         // 클로저 인자를 이름으로 쓰는 이유는 중첩 클로저의 $0가 안쪽
@@ -101,22 +93,11 @@ final class SlotStore: ObservableObject {
             .sorted { $0.number < $1.number }
             .map { workspace -> SpaceChip in
                 let members = agents.filter { $0.workspaceId == workspace.id }
-                let hasSignal = members.contains { $0.status != .idle }
-                if hasSignal {
-                    lastSignalAt[workspace.id] = now
-                } else if let last = lastSignalAt[workspace.id],
-                    now.timeIntervalSince(last) >= Self.chipGraceInterval {
-                    // 유예까지 지났으면 이후 폴링에서 매번 비교하지 않게
-                    // 시각을 지운다.
-                    lastSignalAt.removeValue(forKey: workspace.id)
-                }
-                let inGrace = !hasSignal && lastSignalAt[workspace.id] != nil
-                return SpaceChip(workspace: workspace, agents: members, inGrace: inGrace)
+                return SpaceChip(workspace: workspace, agents: members)
             }
 
-        // 유예 칩은 worstRank가 Int.max라 신호 있는 칩 뒤, 동률은 number순.
         let visible = spaces
-            .filter { $0.isVisible || $0.inGrace }
+            .filter { $0.isVisible }
             .sorted {
                 $0.worstRank == $1.worstRank
                     ? $0.workspace.number < $1.workspace.number
