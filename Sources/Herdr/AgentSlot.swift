@@ -15,6 +15,9 @@ struct AgentSlot: Codable, Identifiable, Equatable {
     let terminalTitle: String?
     /// 소속 워크스페이스. 스페이스 칩 그룹핑 키로 쓴다.
     let workspaceId: String?
+    /// 메타데이터가 심어진 pane에만 존재하는 공식 작업명. 키 자체가 없는
+    /// snapshot도 있어 통째로 옵셔널로 읽는다.
+    let tokens: Tokens?
 
     /// 실측에서 name 키 자체가 없는 항목이 있었다. 키 구성이 에이전트마다
     /// 가변이라 모든 필드를 decodeIfPresent로 읽는다.
@@ -29,6 +32,7 @@ struct AgentSlot: Codable, Identifiable, Equatable {
         paneID = try container.decodeIfPresent(String.self, forKey: .paneID) ?? ""
         terminalTitle = try container.decodeIfPresent(String.self, forKey: .terminalTitle)
         workspaceId = try container.decodeIfPresent(String.self, forKey: .workspaceId)
+        tokens = try container.decodeIfPresent(Tokens.self, forKey: .tokens)
     }
 
     /// name이 없는 항목은 terminal_id로, 그마저 없으면 pane_id로 식별한다.
@@ -42,10 +46,20 @@ struct AgentSlot: Codable, Identifiable, Equatable {
         AgentStatus(rawValue: agentStatus) ?? .unknown
     }
 
+    /// 메타데이터의 summary가 공식 작업명이라 우선하고, 없는 에이전트는
+    /// 제목 휴리스틱으로 폴백한다.
+    var taskTitle: String? {
+        if let summary = tokens?.summary?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !summary.isEmpty {
+            return summary
+        }
+        return heuristicTaskTitle
+    }
+
     /// 터미널 제목에서 상태 글리프(✳ ◑ ◐ 등)를 떼어낸 작업명. 도구 이름
     /// 뿐이거나 비어 있으면 nil. herdr에 작업 설명 필드가 없어 제목에서
     /// 얻는 휴리스틱이다.
-    var taskTitle: String? {
+    private var heuristicTaskTitle: String? {
         let stripped = String(
             (terminalTitle ?? "").drop { !$0.isLetter && !$0.isNumber }
         ).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -71,6 +85,13 @@ struct AgentSlot: Codable, Identifiable, Equatable {
         case paneID = "pane_id"
         case terminalTitle = "terminal_title"
         case workspaceId = "workspace_id"
+        case tokens
+    }
+
+    /// panes 항목의 tokens 객체. summary는 메타데이터가 심어졌을 때만
+    /// 나타나므로 옵셔널로 읽는다.
+    struct Tokens: Codable, Equatable {
+        let summary: String?
     }
 }
 

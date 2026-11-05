@@ -21,6 +21,10 @@ struct WorkspaceInfo: Codable, Equatable, Identifiable {
 struct SpaceChip: Equatable, Identifiable {
     let workspace: WorkspaceInfo
     let agents: [AgentSlot]
+    /// 신호가 끊긴 지 유예 시간 안이라는 표시. SlotStore의 판정 결과를
+    /// 뷰까지 전달하기만 한다. let+기본값은 memberwise init에서 파라미터가
+    /// 빠져 true 칩을 못 만들므로 var 기본값으로 노출한다.
+    var inGrace: Bool = false
 
     var id: String { workspace.id }
 
