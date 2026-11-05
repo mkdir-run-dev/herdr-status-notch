@@ -89,6 +89,14 @@ xcodegen generate
 xcodebuild -project HerdrStatusNotch.xcodeproj -scheme HerdrStatusNotch -configuration Debug build
 ```
 
+빌드 산출물은 `~/Library/Developer/Xcode/DerivedData/HerdrStatusNotch-*/Build/Products/Debug/HerdrStatusNotch.app`에 생긴다. 응용 프로그램 폴더로 복사해 두고 더블클릭으로 실행한다.
+
+```bash
+cp -R ~/Library/Developer/Xcode/DerivedData/HerdrStatusNotch-*/Build/Products/Debug/HerdrStatusNotch.app /Applications/
+```
+
+Release에서 .app zip을 내려받은 경우도 같다. 풀어서 응용 프로그램 폴더에 넣고 실행. 이 앱은 ad-hoc 서명이라 인터넷에서 받은 첫 실행엔 게이트키퍼가 물어본다. 우클릭 → 열기로 한 번 허용하면 이후는 더블클릭으로 뜬다.
+
 또는 `xcodegen generate` 후 `HerdrStatusNotch.xcodeproj`를 Xcode에서 열어 실행한다.
 `.xcodeproj`는 XcodeGen 산출물이라 저장소에 넣지 않는다(`.gitignore` 참조).
 
