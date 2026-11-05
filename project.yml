@@ -1,0 +1,32 @@
+name: HerdrStatusNotch
+options:
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+targets:
+  HerdrStatusNotch:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.herdr.statusnotch
+        PRODUCT_NAME: HerdrStatusNotch
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        # 메뉴바 + 노치 플로팅 앱이라 Dock 아이콘을 숨긴다.
+        INFOPLIST_KEY_LSUIElement: YES
+        SWIFT_VERSION: "5.0"
+        # 로컬 빌드 전용이라 ad-hoc 서명으로 충분하다.
+        CODE_SIGN_IDENTITY: "-"
+schemes:
+  HerdrStatusNotch:
+    build:
+      targets:
+        HerdrStatusNotch: all
+    run:
+      config: Debug
+    archive:
+      config: Release

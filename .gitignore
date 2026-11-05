@@ -1,0 +1,14 @@
+# XcodeGen 산출물. project.yml에서 다시 생성한다.
+*.xcodeproj
+
+# 빌드 산출물
+DerivedData/
+.build/
+build/
+
+# Xcode 사용자 상태
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+.DS_Store
