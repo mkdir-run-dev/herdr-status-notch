@@ -45,12 +45,15 @@ struct MenuBarRootView: View {
             Divider()
             VStack(alignment: .leading, spacing: 2) {
                 // 라벨은 좌측, 스위치는 우측 끝('대기' 태그와 같은 결)에 둔다.
+                // 시스템 스위치는 크기 조절이 없어 80%로 축소해 메뉴 글자
+                // 크기와 균형을 맞춘다.
                 HStack {
                     Text("노치 패널").font(.system(size: 13))
                     Spacer(minLength: 8)
                     Toggle("", isOn: $store.notchPanelEnabled)
                         .labelsHidden()
                         .toggleStyle(.switch)
+                        .scaleEffect(0.8)
                 }
                 HStack {
                     Text("로그인 시 시작").font(.system(size: 13))
@@ -58,6 +61,7 @@ struct MenuBarRootView: View {
                     Toggle("", isOn: $startsAtLogin)
                         .labelsHidden()
                         .toggleStyle(.switch)
+                        .scaleEffect(0.8)
                         .onAppear { startsAtLogin = LoginItemService.shared.isEnabled }
                         .onChange(of: startsAtLogin) { _, on in
                             LoginItemService.shared.setEnabled(on)
