@@ -1,12 +1,14 @@
 import AppKit
 import SwiftUI
 
-/// 앱 아이콘 드롭다운 콘텐츠. offline 경고, 스페이스 지도, 노치 패널
-/// 토글과 종료 순서다. window 스타일을 쓰는 이유는 색 점과 빨간 offline
+/// 앱 아이콘 드롭다운 콘텐츠. offline 경고, 스페이스 지도, 노치 패널·
+/// 로그인 시 시작 토글과 종료 순서다. window 스타일을 쓰는 이유는 색 점과 빨간 offline
 /// 행 같은 커스텀 행이 기본 NSMenu 스타일에서는 제대로 그려지지
 /// 않기 때문이다.
 struct MenuBarRootView: View {
     @EnvironmentObject private var store: SlotStore
+    // 로그인 항목은 시스템 설정이 소유하는 값이라 뷰 상태로만 들고 온다.
+    @State private var startsAtLogin = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -43,6 +45,12 @@ struct MenuBarRootView: View {
             Divider()
             Toggle("노치 패널", isOn: $store.notchPanelEnabled)
                 .toggleStyle(.switch)
+            Toggle("로그인 시 시작", isOn: $startsAtLogin)
+                .toggleStyle(.switch)
+                .onAppear { startsAtLogin = LoginItemService.shared.isEnabled }
+                .onChange(of: startsAtLogin) { _, on in
+                    LoginItemService.shared.setEnabled(on)
+                }
             Button("종료") {
                 NSApplication.shared.terminate(nil)
             }

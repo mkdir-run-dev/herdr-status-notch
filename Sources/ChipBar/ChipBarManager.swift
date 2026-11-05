@@ -43,15 +43,20 @@ final class ChipBarManager: NSObject {
 
     private func makeItem(workspaceID: String) -> NSStatusItem {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        // 메뉴 내용은 여는 시점에 최신 상태로 구성한다(menuNeedsUpdate).
-        // 폴링마다 NSMenu를 다시 만들면 열려 있는 메뉴가 닫힌다.
-        let menu = NSMenu()
-        menu.delegate = self
-        menu.autoenablesItems = false
-        menu.identifier = NSUserInterfaceItemIdentifier(workspaceID)
-        item.menu = menu
         items[workspaceID] = item
+        // 드롭다운을 거치면 클릭 한 번이 메뉴 열기 + 항목 선택 두 단계가
+        // 되므로 클릭 자체를 스페이스 포커스로 보낸다.
+        if let button = item.button {
+            button.identifier = NSUserInterfaceItemIdentifier(workspaceID)
+            button.target = self
+            button.action = #selector(chipClicked(_:))
+        }
         return item
+    }
+
+    @objc private func chipClicked(_ sender: NSButton) {
+        guard let id = sender.identifier?.rawValue else { return }
+        store.focusWorkspace(id)
     }
 
     private func update(item: NSStatusItem, chip: SpaceChip) {
@@ -114,50 +119,5 @@ final class ChipBarManager: NSObject {
         }
         image.isTemplate = false
         return image
-    }
-}
-
-extension ChipBarManager: NSMenuDelegate {
-    /// 칩 클릭으로 열리는 스페이스 전용 메뉴. 소속 에이전트 전원(idle 포함)과
-    /// 스페이스 포커스 항목을 채운다.
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        guard
-            let id = menu.identifier?.rawValue,
-            let chip = store.spaces.first(where: { $0.workspace.workspaceId == id })
-        else { return }
-
-        menu.removeAllItems()
-        for agent in chip.agents {
-            let title = agent.taskTitle.map { "\(agent.displayName) — \($0)" } ?? agent.displayName
-            let item = NSMenuItem(
-                title: title,
-                action: #selector(focusAgentAction(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.isEnabled = agent.name != nil
-            item.representedObject = agent.name
-            menu.addItem(item)
-        }
-
-        menu.addItem(.separator())
-        let workspaceItem = NSMenuItem(
-            title: "스페이스 포커스",
-            action: #selector(focusWorkspaceAction(_:)),
-            keyEquivalent: ""
-        )
-        workspaceItem.target = self
-        workspaceItem.representedObject = chip.workspace.workspaceId
-        menu.addItem(workspaceItem)
-    }
-
-    @objc private func focusAgentAction(_ sender: NSMenuItem) {
-        guard let name = sender.representedObject as? String else { return }
-        store.focusAgent(named: name)
-    }
-
-    @objc private func focusWorkspaceAction(_ sender: NSMenuItem) {
-        guard let id = sender.representedObject as? String else { return }
-        store.focusWorkspace(id)
     }
 }

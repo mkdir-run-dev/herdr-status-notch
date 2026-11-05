@@ -48,6 +48,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var chipBar: ChipBarManager?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // plist는 일반 앱으로 두어 런치패드·아이콘에 노출하고, 런타임에
+        // accessory로 바꿔 Dock 아이콘만 숨긴다.
+        NSApp.setActivationPolicy(.accessory)
         panelController = NotchPanelController(store: store)
         chipBar = ChipBarManager(store: store)
         store.startPolling()
