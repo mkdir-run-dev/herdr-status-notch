@@ -72,7 +72,8 @@ private struct TabRowView: View {
             Circle()
                 .fill(dotColor)
                 .frame(width: 8, height: 8)
-            Text(tab.tab.displayName)
+            // 괄호로 묶어 스페이스명 헤더와 탭 행의 계층을 한눈에 구분한다.
+            Text("(\(tab.tab.displayName))")
                 .font(.system(size: 12, weight: .semibold))
             if let summary = tab.taskSummary {
                 Text(summary)
