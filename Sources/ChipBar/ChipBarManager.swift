@@ -134,7 +134,7 @@ extension ChipBarManager: NSMenuDelegate {
 
         menu.removeAllItems()
         for agent in chip.agents {
-            let title = agent.terminalTitle.map { "\(agent.displayName) - \($0)" } ?? agent.displayName
+            let title = agent.taskTitle.map { "\(agent.displayName) — \($0)" } ?? agent.displayName
             let item = NSMenuItem(
                 title: title,
                 action: #selector(focusAgentAction(_:)),

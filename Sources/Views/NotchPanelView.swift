@@ -35,9 +35,13 @@ struct NotchPanelView: View {
     }
 }
 
-/// 한 슬롯 = 상태 색 점 + 이름 + 터미널 제목 한 줄.
+/// 한 슬롯 = 상태 색 점 + 이름 + 프로젝트 + 작업명 한 줄.
 struct SlotRowView: View {
     let slot: AgentSlot
+
+    private var projectName: String? {
+        slot.cwd.map { ($0 as NSString).lastPathComponent }
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -46,8 +50,14 @@ struct SlotRowView: View {
                 .frame(width: 9, height: 9)
             Text(slot.displayName)
                 .font(.system(size: 13, weight: .semibold))
-            if let title = slot.terminalTitle {
-                Text(title)
+            if let project = projectName {
+                Text(project)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            if let task = slot.taskTitle {
+                Text(task)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

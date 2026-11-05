@@ -42,6 +42,25 @@ struct AgentSlot: Codable, Identifiable, Equatable {
         AgentStatus(rawValue: agentStatus) ?? .unknown
     }
 
+    /// 터미널 제목에서 상태 글리프(✳ ◑ ◐ 등)를 떼어낸 작업명. 도구 이름
+    /// 뿐이거나 비어 있으면 nil. herdr에 작업 설명 필드가 없어 제목에서
+    /// 얻는 휴리스틱이다.
+    var taskTitle: String? {
+        let stripped = String(
+            (terminalTitle ?? "").drop { !$0.isLetter && !$0.isNumber }
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !stripped.isEmpty else { return nil }
+        let lowered = stripped.lowercased()
+        if Self.toolNameTitles.contains(lowered) { return nil }
+        if let agent, lowered == agent.lowercased() { return nil }
+        return stripped
+    }
+
+    /// 제목이 이 값뿐이면 작업 정보가 없어 taskTitle에서 걸러진다.
+    private static let toolNameTitles: Set<String> = [
+        "claude code", "codex", "gemini", "kimi", "opencode", "cursor",
+    ]
+
     enum CodingKeys: String, CodingKey {
         case name
         case agent
