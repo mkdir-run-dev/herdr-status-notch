@@ -64,10 +64,9 @@ final class ChipBarManager: NSObject {
         button.toolTip = chip.workspace.label
     }
 
-    /// 칩 하나를 캡슐 배경 + 상태 점들 + 라벨 비트맵으로 그린다.
-    /// idle은 신호가 아니라 점에서 제외된다(signalAgents가 이미 걸렀다).
+    /// 칩 하나를 캡슐 배경 + 대표 상태 점 1개 + 라벨 비트맵으로 그린다.
+    /// 점은 worstStatus(심각도순 첫 신호 에이전트) 하나뿐이다.
     private func renderChip(_ chip: SpaceChip, appearance: NSAppearance) -> NSImage {
-        let signals = chip.signalAgents
         let font = NSFont.systemFont(ofSize: 13, weight: .medium)
         // 유예 칩은 방금 신호가 사라진 직후라 상태를 단정할 점이 없다.
         // 라벨만 옅게 남겨 꺼져 가는 중임을 보여 준다.
@@ -81,14 +80,11 @@ final class ChipBarManager: NSObject {
         let labelSize = label.size(withAttributes: labelAttributes)
 
         let dot: CGFloat = 8
-        let dotGap: CGFloat = 5
         let innerGap: CGFloat = 6
         let hPadding: CGFloat = 10
         let height: CGFloat = 18
-        let dotsWidth = signals.isEmpty
-            ? 0
-            : CGFloat(signals.count) * (dot + dotGap) - dotGap
-        let width = hPadding + dotsWidth + (signals.isEmpty ? 0 : innerGap) + labelSize.width + hPadding
+        let hasDot = chip.worstStatus != nil
+        let width = hPadding + (hasDot ? dot + innerGap : 0) + labelSize.width + hPadding
 
         let image = NSImage(size: NSSize(width: ceil(width), height: height), flipped: false) { rect in
             // 이미지 캐싱으로 그리기 시점이 늦어져도 다크·라이트 색이 뒤바뀌지
@@ -105,16 +101,14 @@ final class ChipBarManager: NSObject {
                 capsule.lineWidth = 1
                 capsule.stroke()
 
-                var x = hPadding
-                for agent in signals {
-                    agent.status.nsColor.setFill()
+                if let status = chip.worstStatus {
+                    status.nsColor.setFill()
                     NSBezierPath(
-                        ovalIn: NSRect(x: x, y: (height - dot) / 2, width: dot, height: dot)
+                        ovalIn: NSRect(x: hPadding, y: (height - dot) / 2, width: dot, height: dot)
                     ).fill()
-                    x += dot + dotGap
                 }
 
-                let textX = signals.isEmpty ? hPadding : hPadding + dotsWidth + innerGap
+                let textX = hasDot ? hPadding + dot + innerGap : hPadding
                 label.draw(
                     at: NSPoint(x: textX, y: (height - labelSize.height) / 2),
                     withAttributes: labelAttributes

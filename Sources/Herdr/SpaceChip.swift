@@ -50,10 +50,15 @@ struct SpaceChip: Equatable, Identifiable {
         signalAgents.first?.status.sortRank ?? Int.max
     }
 
+    /// 스페이스 대표 상태. 심각도순 첫 신호 에이전트의 상태. 신호가 없으면 nil.
+    var worstStatus: AgentStatus? {
+        signalAgents.first?.status
+    }
+
     var isVisible: Bool { !signalAgents.isEmpty }
 
-    /// 스페이스 안 에이전트 종류 요약. "claude" 한 종류면 "claude ×3",
-    /// 섞였으면 "claude · grok". 종류를 모르면 "?".
+    /// 스페이스 안 에이전트 종류 요약. 첫 등장 순 그대로 " · "로 잇고
+    /// 개수는 세지 않는다. 종류를 모르면 "?".
     var agentKindsLabel: String {
         let known = agents.compactMap { $0.agent }.filter { !$0.isEmpty }
         var seen: Set<String> = []
@@ -62,9 +67,13 @@ struct SpaceChip: Equatable, Identifiable {
             kinds.append(kind)
         }
         guard !kinds.isEmpty else { return "?" }
-        if kinds.count == 1 {
-            return known.count > 1 ? "\(kinds[0]) ×\(known.count)" : kinds[0]
-        }
         return kinds.joined(separator: " · ")
+    }
+
+    /// 신호 에이전트의 작업요약을 심각도순으로 " · "로 결합한 한 줄.
+    /// 요약이 하나도 없으면 nil.
+    var signalTaskSummary: String? {
+        let titles = signalAgents.compactMap(\.taskTitle)
+        return titles.isEmpty ? nil : titles.joined(separator: " · ")
     }
 }

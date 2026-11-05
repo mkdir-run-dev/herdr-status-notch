@@ -72,7 +72,7 @@ private struct RowButtonStyle: ButtonStyle {
     }
 }
 
-/// 스페이스 지도 행. 신호 에이전트 상태 점 다발 + 라벨, 잠든 스페이스는
+/// 스페이스 지도 행. 대표 상태 점(worstStatus) + 라벨, 잠든 스페이스는
 /// 오른쪽 '대기' 태그로 구분한다. 탭하면 그 스페이스로 포커스가 옮겨진다.
 private struct SpaceMapRow: View {
     let chip: SpaceChip
@@ -83,12 +83,10 @@ private struct SpaceMapRow: View {
             store.focusWorkspace(chip.id)
         } label: {
             HStack {
-                HStack(spacing: 4) {
-                    ForEach(chip.signalAgents.prefix(8)) { agent in
-                        Circle()
-                            .fill(agent.status.color)
-                            .frame(width: 8, height: 8)
-                    }
+                if let status = chip.worstStatus {
+                    Circle()
+                        .fill(status.color)
+                        .frame(width: 8, height: 8)
                 }
                 Text(chip.workspace.label)
                     .font(.system(size: 13, weight: .semibold))
