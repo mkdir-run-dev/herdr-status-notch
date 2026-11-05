@@ -64,11 +64,11 @@ final class ChipBarManager: NSObject {
         button.toolTip = chip.workspace.label
     }
 
-    /// 칩 하나를 캡슐 배경 + 상태 점들(7pt) + 라벨(12pt medium) 비트맵으로 그린다.
+    /// 칩 하나를 캡슐 배경 + 상태 점들 + 라벨 비트맵으로 그린다.
     /// idle은 신호가 아니라 점에서 제외된다(signalAgents가 이미 걸렀다).
     private func renderChip(_ chip: SpaceChip, appearance: NSAppearance) -> NSImage {
         let signals = chip.signalAgents
-        let font = NSFont.systemFont(ofSize: 12, weight: .medium)
+        let font = NSFont.systemFont(ofSize: 13, weight: .medium)
         let labelAttributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: NSColor.labelColor,
@@ -76,11 +76,11 @@ final class ChipBarManager: NSObject {
         let label = chip.workspace.label as NSString
         let labelSize = label.size(withAttributes: labelAttributes)
 
-        let dot: CGFloat = 7
-        let dotGap: CGFloat = 4
+        let dot: CGFloat = 8
+        let dotGap: CGFloat = 5
         let innerGap: CGFloat = 6
-        let hPadding: CGFloat = 9
-        let height: CGFloat = 16
+        let hPadding: CGFloat = 10
+        let height: CGFloat = 18
         let dotsWidth = signals.isEmpty
             ? 0
             : CGFloat(signals.count) * (dot + dotGap) - dotGap

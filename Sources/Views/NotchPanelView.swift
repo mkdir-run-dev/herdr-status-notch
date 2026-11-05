@@ -18,16 +18,20 @@ struct NotchPanelView: View {
     }
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("전체 에이전트 \(agents.count)")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Divider()
             ForEach(agents) { slot in
                 SlotRowView(slot: slot)
                     .contentShape(Rectangle())
                     .onTapGesture { store.focus(slot) }
             }
         }
-        .padding(10)
-        .frame(maxWidth: NotchPanelController.panelWidth - 20)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .padding(12)
+        .frame(maxWidth: NotchPanelController.panelWidth - 24)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -39,9 +43,9 @@ struct SlotRowView: View {
         HStack(spacing: 8) {
             Circle()
                 .fill(slot.status.color)
-                .frame(width: 8, height: 8)
+                .frame(width: 9, height: 9)
             Text(slot.displayName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
             if let title = slot.terminalTitle {
                 Text(title)
                     .font(.system(size: 11))
@@ -52,6 +56,6 @@ struct SlotRowView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 3)
+        .padding(.vertical, 5)
     }
 }
