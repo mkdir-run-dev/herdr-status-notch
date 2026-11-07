@@ -161,7 +161,7 @@ accessory 전환) 런치패드에는 아이콘이 노출된다.
 
 ## 라이선스
 
-MIT
+GNU GPL v3. 전문은 [LICENSE](LICENSE) 파일에 있다.
 
 ## 구조
 
