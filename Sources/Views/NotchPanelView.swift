@@ -21,7 +21,8 @@ struct NotchPanelView: View {
             }
         }
         .padding(.vertical, 10)
-        .frame(maxWidth: NotchPanelController.panelWidth - 16)
+        .padding(.horizontal, 8)
+        .frame(width: store.notchPanelWidth)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 }
@@ -42,17 +43,22 @@ private struct SpaceSectionView: View {
                         .fill(status.color)
                         .frame(width: 9, height: 9)
                 }
+                // 스페이스명이 종류 요약에 밀려 짤리지 않게 우선순위를 올린다.
                 Text(space.workspace.label)
                     .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                    .layoutPriority(1)
                 Spacer(minLength: 8)
                 Text(space.agentKindsLabel)
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
             .padding(.horizontal, 8)
             .frame(minHeight: 24)
             .contentShape(Rectangle())
             .onTapGesture { store.focusWorkspace(space.id) }
+            .help(space.workspace.label)
             ForEach(space.tabs) { tab in
                 TabRowView(tab: tab)
             }
@@ -76,8 +82,11 @@ private struct TabRowView: View {
                 .fill(dotColor)
                 .frame(width: 8, height: 8)
             // 괄호로 묶어 스페이스명 헤더와 탭 행의 계층을 한눈에 구분한다.
+            // 탭명이 작업요약에 밀려 짤리지 않게 우선순위를 올린다.
             Text("(\(tab.tab.displayName))")
                 .font(.system(size: 12, weight: .semibold))
+                .lineLimit(1)
+                .layoutPriority(1)
             if let summary = tab.taskSummary {
                 Text(summary)
                     .font(.system(size: 11))
@@ -90,6 +99,7 @@ private struct TabRowView: View {
                 Text(models)
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         }
         // 좌측 여백 16 = 스페이스 헤더(8) + 탭 계층 들여쓰기(8).
@@ -98,6 +108,14 @@ private struct TabRowView: View {
         .frame(minHeight: 24)
         .contentShape(Rectangle())
         .onTapGesture { store.focusTab(tab.id) }
+        // 좁은 폭에서 짤린 전체 문구는 호버로 확인한다.
+        .help(helpText)
+    }
+
+    /// 호버 툴팁 텍스트. 탭명과 작업요약을 한 줄로 붙인다.
+    private var helpText: String {
+        guard let summary = tab.taskSummary else { return tab.tab.displayName }
+        return "\(tab.tab.displayName) — \(summary)"
     }
 
     /// idle의 상태 색(흰색)은 활성 신호처럼 읽혀 탭 점은 회색으로 낮춘다.

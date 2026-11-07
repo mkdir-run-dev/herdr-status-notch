@@ -9,6 +9,9 @@ final class SlotStore: ObservableObject {
     static let maxChips = 8
     static let pollInterval: TimeInterval = 0.7
     static let notchPanelEnabledKey = "notchPanelEnabled"
+    static let notchPanelWidthKey = "notchPanelWidth"
+    /// 노치 패널 기본 폭. UserDefaults 기본값 등록과 첫 그리기에 쓴다.
+    static let defaultPanelWidth: CGFloat = 320
 
     /// 전체 스페이스(잠든 스페이스 포함). 드롭다운 전체 목록용. number순.
     @Published private(set) var spaces: [SpaceChip] = []
@@ -26,6 +29,14 @@ final class SlotStore: ObservableObject {
             UserDefaults.standard.set(notchPanelEnabled, forKey: Self.notchPanelEnabledKey)
         }
     }
+    /// 노치 패널 폭. 리사이즈 제스처가 갱신하고 UserDefaults에 미러링해
+    /// 앱 재시작에 유지한다.
+    @Published var notchPanelWidth: CGFloat {
+        didSet {
+            guard oldValue != notchPanelWidth else { return }
+            UserDefaults.standard.set(Double(notchPanelWidth), forKey: Self.notchPanelWidthKey)
+        }
+    }
 
     private let client: HerdrClient
     private var timer: Timer?
@@ -34,8 +45,13 @@ final class SlotStore: ObservableObject {
     init(client: HerdrClient = HerdrClient()) {
         self.client = client
         // 기존 동작(패널 항상 표시)을 잇도록 기본값은 켠다.
-        UserDefaults.standard.register(defaults: [Self.notchPanelEnabledKey: true])
+        UserDefaults.standard.register(defaults: [
+            Self.notchPanelEnabledKey: true,
+            Self.notchPanelWidthKey: Double(Self.defaultPanelWidth),
+        ])
         notchPanelEnabled = UserDefaults.standard.bool(forKey: Self.notchPanelEnabledKey)
+        let storedWidth = UserDefaults.standard.double(forKey: Self.notchPanelWidthKey)
+        notchPanelWidth = storedWidth > 0 ? storedWidth : Self.defaultPanelWidth
     }
 
     func startPolling() {
