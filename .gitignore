@@ -12,3 +12,9 @@ xcuserdata/
 *.xccheckout
 
 .DS_Store
+
+# XcodeGen 산출물. project.yml info 블록에서 다시 생성한다.
+HerdrStatusNotch-Info.plist
+
+# 배포 산출물
+dist/

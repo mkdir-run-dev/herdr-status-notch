@@ -10,6 +10,7 @@ final class SlotStore: ObservableObject {
     static let pollInterval: TimeInterval = 0.7
     static let notchPanelEnabledKey = "notchPanelEnabled"
     static let notchPanelWidthKey = "notchPanelWidth"
+    static let appLanguageKey = "appLanguage"
     /// 노치 패널 기본 폭. UserDefaults 기본값 등록과 첫 그리기에 쓴다.
     static let defaultPanelWidth: CGFloat = 320
 
@@ -37,6 +38,13 @@ final class SlotStore: ObservableObject {
             UserDefaults.standard.set(Double(notchPanelWidth), forKey: Self.notchPanelWidthKey)
         }
     }
+    /// 인터페이스 언어. 바꾸면 폴링 없이 즉시 뷰가 다시 그려진다.
+    @Published var language: AppLanguage {
+        didSet {
+            guard oldValue != language else { return }
+            UserDefaults.standard.set(language.rawValue, forKey: Self.appLanguageKey)
+        }
+    }
 
     private let client: HerdrClient
     private var timer: Timer?
@@ -48,10 +56,20 @@ final class SlotStore: ObservableObject {
         UserDefaults.standard.register(defaults: [
             Self.notchPanelEnabledKey: true,
             Self.notchPanelWidthKey: Double(Self.defaultPanelWidth),
+            Self.appLanguageKey: AppLanguage.system.rawValue,
         ])
         notchPanelEnabled = UserDefaults.standard.bool(forKey: Self.notchPanelEnabledKey)
         let storedWidth = UserDefaults.standard.double(forKey: Self.notchPanelWidthKey)
         notchPanelWidth = storedWidth > 0 ? storedWidth : Self.defaultPanelWidth
+        language = AppLanguage(
+            rawValue: UserDefaults.standard.string(forKey: Self.appLanguageKey) ?? ""
+        ) ?? .system
+    }
+
+    /// UI 문자 조회. 형식 인자를 받는 키는 포맷 문자에 그대로 대입한다.
+    func t(_ key: AppText, _ args: CVarArg...) -> String {
+        let format = key.text(in: language)
+        return args.isEmpty ? format : String(format: format, arguments: args)
     }
 
     func startPolling() {

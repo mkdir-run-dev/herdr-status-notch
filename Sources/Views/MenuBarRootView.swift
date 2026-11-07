@@ -13,18 +13,18 @@ struct MenuBarRootView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             if store.connection == .offline {
-                Label("herdr 오프라인", systemImage: "antenna.radiowaves.left.and.right.slash")
+                Label(store.t(.offline), systemImage: "antenna.radiowaves.left.and.right.slash")
                     .foregroundStyle(ConnectionState.offline.color)
             } else {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
                         Image(systemName: "rectangle.stack")
                             .font(.system(size: 10))
-                        Text("스페이스 \(store.spaces.count)")
+                        Text(store.t(.spacesHeader, store.spaces.count))
                     }
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    Text("클릭하면 해당 스페이스로 이동")
+                    Text(store.t(.spacesHint))
                         .font(.system(size: 10))
                         .foregroundStyle(.tertiary)
                 }
@@ -32,7 +32,7 @@ struct MenuBarRootView: View {
                 .padding(.bottom, 2)
 
                 if store.spaces.isEmpty {
-                    Text("스페이스 없음")
+                    Text(store.t(.noSpaces))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 } else {
@@ -48,7 +48,7 @@ struct MenuBarRootView: View {
                 // 시스템 스위치는 크기 조절이 없어 80%로 축소해 메뉴 글자
                 // 크기와 균형을 맞춘다.
                 HStack {
-                    Text("노치 패널").font(.system(size: 13))
+                    Text(store.t(.notchPanelToggle)).font(.system(size: 13))
                     Spacer(minLength: 8)
                     Toggle("", isOn: $store.notchPanelEnabled)
                         .labelsHidden()
@@ -56,7 +56,7 @@ struct MenuBarRootView: View {
                         .scaleEffect(0.8)
                 }
                 HStack {
-                    Text("로그인 시 시작").font(.system(size: 13))
+                    Text(store.t(.startAtLoginToggle)).font(.system(size: 13))
                     Spacer(minLength: 8)
                     Toggle("", isOn: $startsAtLogin)
                         .labelsHidden()
@@ -67,11 +67,26 @@ struct MenuBarRootView: View {
                             LoginItemService.shared.setEnabled(on)
                         }
                 }
+                HStack {
+                    Text(store.t(.languageLabel)).font(.system(size: 13))
+                    Spacer(minLength: 8)
+                    // 언어 이름 자체는 각 언어 표기(한국어·English)를 그대로
+                    // 쓰고 시스템 옵션만 현재 언어로 적는다.
+                    Picker("", selection: $store.language) {
+                        Text(store.t(.languageSystemOption)).tag(AppLanguage.system)
+                        Text("한국어").tag(AppLanguage.korean)
+                        Text("English").tag(AppLanguage.english)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .controlSize(.small)
+                    .fixedSize()
+                }
                 Button {
                     NSApplication.shared.terminate(nil)
                 } label: {
                     // 누를 수 있는 행은 비활성 회색이 아니라 기본 색으로.
-                    Text("종료")
+                    Text(store.t(.quit))
                         .font(.system(size: 13))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -123,7 +138,7 @@ private struct SpaceMapRow: View {
                     .lineLimit(1)
                 Spacer(minLength: 8)
                 if chip.signalAgents.isEmpty {
-                    Text("대기")
+                    Text(store.t(.idleTag))
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 6)

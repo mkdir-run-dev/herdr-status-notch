@@ -3,6 +3,7 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+  developmentLanguage: en
 targets:
   HerdrStatusNotch:
     type: application
@@ -15,14 +16,20 @@ targets:
         PRODUCT_NAME: HerdrStatusNotch
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
-        GENERATE_INFOPLIST_FILE: YES
-        # 런치패드·아이콘 노출을 위해 plist는 일반 앱으로 둔다. Dock 숨김은
-        # 런타임에 AppDelegate가 accessory로 전환한다.
-        INFOPLIST_KEY_LSUIElement: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_VERSION: "5.0"
         # 로컬 빌드 전용이라 ad-hoc 서명으로 충분하다.
         CODE_SIGN_IDENTITY: "-"
+    info:
+      path: HerdrStatusNotch-Info.plist
+      properties:
+        CFBundleDevelopmentRegion: en
+        # 한국어·영어 지원. 문자 자체는 코드 표(AppText)가 주고 이 선언은
+        # 시스템에 앱이 다루는 언어를 알린다.
+        CFBundleLocalizations: [en, ko]
+        # 런치패드·아이콘 노출을 위해 plist는 일반 앱으로 둔다. Dock 숨김은
+        # 런타임에 AppDelegate가 accessory로 전환한다.
+        LSUIElement: NO
 schemes:
   HerdrStatusNotch:
     build:

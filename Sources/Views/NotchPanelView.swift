@@ -9,7 +9,7 @@ struct NotchPanelView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("전체 스페이스 \(store.spaces.count)")
+            Text(store.t(.allSpacesHeader, store.spaces.count))
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 8)
