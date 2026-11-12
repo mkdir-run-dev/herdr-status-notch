@@ -28,6 +28,8 @@ UserDefaults(`appLanguage`)에 저장되고 화면을 다시 그려 즉시 적�
   심각도(blocked → working → done → unknown)순, 동률은 워크스페이스 번호순,
   상한 8개(초과분은 드롭다운 스페이스 지도에서 확인). 칩을 클릭하면 메뉴
   없이 곧바로 그 스페이스로 포커스가 옮겨진다(`herdr workspace focus`).
+  이때 Rex(herdr GUI)가 꺼져 있거나 창이 전부 닫혀 있으면 먼저 띄워
+  앞으로 끌어온 뒤 포커스를 옮긴다(드롭다운·노치 패널의 클릭도 같다).
 
 ## 상태 색
 

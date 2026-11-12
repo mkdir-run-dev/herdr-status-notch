@@ -169,15 +169,24 @@ final class SlotStore: ObservableObject {
         focusAgent(named: name)
     }
 
+    // focus 계열은 명령에 앞서 Rex(herdr GUI)를 앞으로 끌어온다. 창이
+    // 닫혀 있거나 앱이 꺼져 있으면 포커스 명령이 소켓 전환으로만 끝나
+    // 아무 창도 보이지 않기 때문이다.
     func focusAgent(named name: String) {
-        client.focus(agentNamed: name)
+        RexLauncher.bringToFrontThen { [client] in
+            client.focus(agentNamed: name)
+        }
     }
 
     func focusWorkspace(_ id: String) {
-        client.focus(workspaceID: id)
+        RexLauncher.bringToFrontThen { [client] in
+            client.focus(workspaceID: id)
+        }
     }
 
     func focusTab(_ id: String) {
-        client.focus(tabID: id)
+        RexLauncher.bringToFrontThen { [client] in
+            client.focus(tabID: id)
+        }
     }
 }
