@@ -76,7 +76,7 @@ struct TabChip: Equatable, Identifiable {
 
     var status: AgentStatus { tab.status }
 
-    /// 탭 안 작업요약을 심각도순, 동률은 표시 이름순으로 " · "로 잇는다.
+    /// 탭 안 작업요약을 주의도순, 동률은 표시 이름순으로 " · "로 잇는다.
     /// taskTitle이 없는 에이전트는 브랜치명으로 대체하고 둘 다 없으면 그
     /// 에이전트는 건너뛴다. 대체할 이름이 하나도 없으면 nil.
     var taskSummary: String? {
@@ -113,7 +113,7 @@ struct SpaceChip: Equatable, Identifiable {
 
     var id: String { workspace.id }
 
-    /// idle을 제외한 신호 에이전트. 심각도(blocked → working → done → unknown)순,
+    /// idle을 제외한 신호 에이전트. 주의도(blocked → done → working → unknown)순,
     /// 동률은 표시 이름순. sortRank는 idle(3)이 unknown(4)보다 앞지만 여기엔
     /// idle이 없어 그대로 심각도 표로 쓴다.
     var signalAgents: [AgentSlot] {
@@ -135,7 +135,7 @@ struct SpaceChip: Equatable, Identifiable {
         signalAgents.first?.status.sortRank ?? Int.max
     }
 
-    /// 스페이스 대표 상태. 심각도순 첫 신호 에이전트의 상태. 신호가 없으면 nil.
+    /// 스페이스 대표 상태. 주의도순 첫 신호 에이전트의 상태. 신호가 없으면 nil.
     var worstStatus: AgentStatus? {
         signalAgents.first?.status
     }
@@ -155,7 +155,7 @@ struct SpaceChip: Equatable, Identifiable {
         return kinds.joined(separator: " · ")
     }
 
-    /// 신호 에이전트의 작업요약을 심각도순으로 " · "로 결합한 한 줄.
+    /// 신호 에이전트의 작업요약을 주의도순으로 " · "로 결합한 한 줄.
     /// 요약이 하나도 없으면 nil.
     var signalTaskSummary: String? {
         let titles = signalAgents.compactMap(\.taskTitle)

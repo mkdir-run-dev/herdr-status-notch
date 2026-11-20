@@ -7,6 +7,10 @@ import SwiftUI
 final class SlotStore: ObservableObject {
     /// 메뉴바에 놓는 칩 상한. 초과분은 overflowCount로만 알린다.
     static let maxChips = 8
+    /// 칩 폭 합계 예산(pt). 개수 상한과 병용해 어느 쪽이든 먼저 차면
+    /// 그 칩부터는 드롭다운 스페이스 지도로 넘긴다. 라벨이 길어 개수만
+    /// 세면 메뉴바를 물리적으로 넘칠 수 있어 폭도 잰다.
+    static let maxChipsWidth: CGFloat = 480
     static let pollInterval: TimeInterval = 0.7
     static let notchPanelEnabledKey = "notchPanelEnabled"
     static let notchPanelWidthKey = "notchPanelWidth"
@@ -154,8 +158,23 @@ final class SlotStore: ObservableObject {
                     ? $0.workspace.number < $1.workspace.number
                     : $0.worstRank < $1.worstRank
             }
-        chips = Array(visible.prefix(Self.maxChips))
-        overflowCount = max(0, visible.count - Self.maxChips)
+        // 주의도순(blocked → done → working)으로 채우며 개수·폭 예산 중 먼저 넘는 쪽에서 끊는다.
+        // 폭 계산은 렌더링(ChipMetrics)과 같은 식으로, 잘린 라벨 기준으로
+        // 잰다. 중간에 예산을 넘는 칩이 나오면 그대로 멈춘다(심각도가
+        // 낮은 칩을 위해 높은 칩을 건너뛰지 않는다).
+        var selected: [SpaceChip] = []
+        var remaining = Self.maxChipsWidth
+        for chip in visible where selected.count < Self.maxChips {
+            let width = ChipMetrics.chipWidth(
+                label: ChipMetrics.truncatedLabel(chip.workspace.label),
+                hasDot: chip.worstStatus != nil
+            )
+            if width > remaining { break }
+            selected.append(chip)
+            remaining -= width
+        }
+        chips = selected
+        overflowCount = visible.count - selected.count
 
         idleAgents = agents
             .filter { $0.status == .idle }

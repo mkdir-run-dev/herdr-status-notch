@@ -9,12 +9,14 @@ enum AgentStatus: String, CaseIterable {
     case blocked
     case unknown
 
-    /// 정렬 우선순위 표. 숫자가 작을수록 패널 위쪽. 가장 주의가 필요한 blocked를
-    /// 눈에 잘 띄는 맨 위에 두고, 무난한 idle을 아래로 보낸다.
+    /// 정렬 우선순위 표. 숫자가 작을수록 패널 위쪽. 기준은 '심각도'가 아니라
+    /// '사용자를 기다리는 정도'다 — 지금 입력을 기다리는 blocked, 확인을
+    /// 기다리는 done, 아무것도 안 기다리는 working 순. idle은 신호가 아니라
+    /// 맨 아래로 보낸다.
     private static let sortRanks: [AgentStatus: Int] = [
         .blocked: 0,
-        .working: 1,
-        .done: 2,
+        .done: 1,
+        .working: 2,
         .idle: 3,
         .unknown: 4,
     ]
