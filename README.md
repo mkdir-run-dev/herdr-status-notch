@@ -29,7 +29,7 @@ macOS 시맨틱 색을 그대로 쓴다.
 
 ## 설치 및 실행
 
-**요구 사항**: macOS 14.0 이상, `herdr` CLI (`PATH` 또는 `~/.local/bin/herdr`)
+**요구 사항**: macOS 14.0 이상, `herdr` CLI (`PATH` 또는 `~/.local/bin/herdr`) + Rex (herdr GUI). 상태 표시는 herdr CLI만으로 동작하지만 칩·패널 클릭의 포커스 이동 대상은 Rex다.
 
 ### Release에서 설치
 1. Release에서 `.zip`을 내려받아 압축을 푼다.
