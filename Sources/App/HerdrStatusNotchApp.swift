@@ -15,7 +15,7 @@ struct HerdrStatusNotchApp: App {
     }
 }
 
-/// 메뉴바 앱 아이콘. 그리드 아이콘 + 대기(idle) 인원수 뱃지이며 herdr가
+/// 메뉴바 앱 아이콘. 그리드 아이콘 + 잠든 스페이스 수 뱃지이며 herdr가
 /// 오프라인이면 아이콘이 빨개진다.
 private struct StatusIconLabel: View {
     @ObservedObject var store: SlotStore
@@ -24,10 +24,14 @@ private struct StatusIconLabel: View {
         ZStack(alignment: .topTrailing) {
             Image(systemName: "circle.grid.2x2.fill")
                 .foregroundStyle(store.connection == .offline ? Color.red : Color.primary)
-            // 0명이면 숫자 없이 아이콘만 남는다. idle은 경보가 아니라 가용
-            // 자원이므로 뱃지는 blocked 호박과 구분되는 중립 회색을 쓴다.
-            if !store.idleAgents.isEmpty {
-                Text("\(store.idleAgents.count)")
+            // 뱃지는 워크스페이스 기준으로 센다 — 소속 에이전트가 전원
+            // idle인 '잠든 스페이스'의 수. 칩이 신호 있는 스페이스만
+            // 보여주니 뱃지가 가용 스페이스 몇 개인지를 메운다. 0이면
+            // 숫자 없이 아이콘만 남고, 잠김은 경보가 아니라 가용 자원이므로
+            // 뱃지는 blocked 호박과 구분되는 중립 회색을 쓴다.
+            let sleepingSpaces = store.spaces.filter { $0.signalAgents.isEmpty }.count
+            if sleepingSpaces > 0 {
+                Text("\(sleepingSpaces)")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 3)
