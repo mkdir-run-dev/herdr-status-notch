@@ -19,9 +19,8 @@ final class SlotStore: ObservableObject {
     static let herdrModeKey = "herdrMode"
     /// 노치 패널 기본 폭. UserDefaults 기본값 등록과 첫 그리기에 쓴다.
     static let defaultPanelWidth: CGFloat = 320
-    /// 반대 모드 실행 감지 주기. 정상일 때는 여유 있게, 오프라인이면 빠르게.
-    static let otherModeProbeInterval: TimeInterval = 10
-    static let otherModeProbeIntervalOffline: TimeInterval = 2
+    /// 선택한 모드가 오프라인일 때 반대 모드를 살피는 주기.
+    static let otherModeProbeInterval: TimeInterval = 2
 
     private static let logger = Logger(subsystem: "local.herdr.statusnotch", category: "store")
 
@@ -244,17 +243,16 @@ final class SlotStore: ObservableObject {
             .sorted { $0.displayName < $1.displayName }
     }
 
-    /// 반대 모드가 실제로 응답하면 이번 실행 세션에서 한 번만 전환을 제안한다.
+    /// 선택한 모드가 꺼져 있고 반대 모드가 실제로 응답하면 이번 실행 세션에서 한 번만
+    /// 전환을 제안한다. 지금 모드가 정상일 때는 다른 모드를 살피지 않는다.
     private func maybeProbeOtherMode() {
         let other = mode.opposite
-        let interval = connection == .offline
-            ? Self.otherModeProbeIntervalOffline
-            : Self.otherModeProbeInterval
         guard
+            connection == .offline,
             suggestedModeSwitch == nil,
             !otherModeProbeInFlight,
             !promptedOtherModes.contains(other),
-            Date().timeIntervalSince(lastOtherModeProbeAt) >= interval
+            Date().timeIntervalSince(lastOtherModeProbeAt) >= Self.otherModeProbeInterval
         else { return }
         lastOtherModeProbeAt = Date()
         otherModeProbeInFlight = true

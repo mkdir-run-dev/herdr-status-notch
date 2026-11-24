@@ -115,9 +115,8 @@ final class HerdrAppClient: HerdrBackend {
         }
     }
 
-    /// 확인이 필요한 에이전트가 있으면 그 pane으로 옮긴다. 스페이스·탭 선택만으로는
-    /// 창 안의 pane 포커스가 바뀌지 않아, 한 스페이스뿐인 layout에서는 눌러도
-    /// 아무것도 움직이지 않기 때문이다.
+    /// 확인이 필요하거나 작업 중인 에이전트가 있으면 그 pane으로 옮긴다. 스페이스·탭 선택만으로는
+    /// 창 안의 pane 포커스가 바뀌지 않아, 누르기 전 pane 포커스가 그대로 남기 때문이다.
     private func focusLead(in tabs: [Tab], spaceID: String, tabID: String?) {
         let lead = Self.leadTerminal(in: tabs)
         if let lead {
@@ -361,18 +360,19 @@ final class HerdrAppClient: HerdrBackend {
         agents.map(\.status).min { $0.sortRank < $1.sortRank } ?? .idle
     }
 
-    /// 탭들 중 클릭 시 이동할 에이전트. 사용자가 봐야 하는 상태(blocked·done·unknown)
-    /// 중 주의도가 가장 높은 하나다. 작업 중이거나 대기 중인 에이전트만 있으면 nil이라
-    /// 창이 기억하는 pane 포커스가 그대로 남는다.
+    /// 클릭 시 이동할 우선순위. 입력을 기다리는 blocked, 그다음 지금 작업 중인 에이전트다.
+    private static let leadRanks: [AgentStatus: Int] = [.blocked: 0, .working: 1, .done: 2, .unknown: 3]
+
+    /// 탭들 중 클릭 시 이동할 에이전트 하나. leadRanks가 가장 앞선 에이전트고, 전원
+    /// 대기 중이면 nil이라 창이 기억하는 pane 포커스가 그대로 남는다.
     static func leadTerminal(in tabs: [Tab]) -> String? {
         var best: (rank: Int, terminal: String)?
         for ref in tabs.flatMap({ flatten($0.terminals ?? []) }) {
-            guard
-                let status = AgentStatus(rawValue: ref.status ?? ""),
-                status != .idle, status != .working
-            else { continue }
-            if let current = best, current.rank <= status.sortRank { continue }
-            best = (status.sortRank, ref.terminal)
+            guard let rank = AgentStatus(rawValue: ref.status ?? "").flatMap({ leadRanks[$0] }) else {
+                continue
+            }
+            if let current = best, current.rank <= rank { continue }
+            best = (rank, ref.terminal)
         }
         return best?.terminal
     }
