@@ -1,12 +1,15 @@
 import AppKit
 import Darwin
 import Foundation
+import os
 
 /// Herdr.app 백엔드. 창이 열려 있으면 `herdr-app ls`(스페이스 > 탭 > 터미널)로
 /// 계층을 얻고 코어(`hc ls`)가 cwd를 보강한다. 창이 닫혀도 코어는 터미널을
 /// 계속 돌리므로 그때는 코어만 묻는다.
-final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
+final class HerdrAppClient: HerdrBackend {
     let mode = HerdrMode.app
+
+    private static let logger = Logger(subsystem: "local.herdr.statusnotch", category: "app")
 
     /// 창(`herdr-app ls`·`do`)의 제어 소켓. HERDR_APP_HOME이 다른 창을 고른다.
     static var controlSocketPath: String {
@@ -31,8 +34,6 @@ final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
         label: "local.herdr.statusnotch.appcommand",
         qos: .userInitiated
     )
-    /// 축소 계층(창이 닫혀 있던 폴링)의 ID → 대표 터미널 주소.
-    private var fallbackTargets: [String: String] = [:]
 
     init() {
         let home = URL(fileURLWithPath: NSHomeDirectory())
@@ -55,16 +56,14 @@ final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
     func snapshot() -> HerdrSnapshotResult {
         queue.sync {
             let core = coreByAddress()
-            fallbackTargets = [:]
             if let window = windowList() {
+                let hasCore = core != nil
                 return Self.build(window: window, core: core ?? [:]) { terminalID in
-                    self.terminalTitle(terminalID)
+                    hasCore ? self.terminalTitle(terminalID) : nil
                 }
             }
             guard let core else { return .offline }
-            let fallback = Self.buildFallback(core: Array(core.values))
-            fallbackTargets = fallback.targets
-            return fallback.result
+            return Self.buildFallback(core: Array(core.values))
         }
     }
 
@@ -80,47 +79,78 @@ final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
     }
 
     func focus(workspaceID: String) {
-        if let address = fallbackTarget(for: workspaceID) {
-            focusTerminal(address)
-        } else {
-            runDo(["space.select", "--id", workspaceID])
+        commandQueue.async {
+            self.withWindow { window in
+                guard let space = window.spaces.first(where: { Self.isSpace($0, id: workspaceID) }) else {
+                    return
+                }
+                self.perform(["space.select", "--id", space.id])
+                self.focusLead(in: space.tabs ?? [], spaceID: space.id, tabID: nil)
+            }
         }
     }
 
     func focus(tabID: String) {
-        if let address = fallbackTarget(for: tabID) {
-            focusTerminal(address)
-        } else {
-            runDo(["tab.select", "--id", tabID])
+        commandQueue.async {
+            self.withWindow { window in
+                for space in window.spaces {
+                    guard
+                        let tab = (space.tabs ?? []).first(where: { Self.isTab($0, in: space, id: tabID) })
+                    else { continue }
+                    self.perform(["space.select", "--id", space.id])
+                    self.perform(["tab.select", "--id", tab.id])
+                    self.focusLead(in: [tab], spaceID: space.id, tabID: tab.id)
+                    return
+                }
+            }
         }
     }
 
     /// address(t1)가 없는 에이전트는 지목할 대상이 없어 아무 일도 하지 않는다.
     func focus(agent: AgentSlot) {
         guard let address = agent.terminalID, !address.isEmpty else { return }
-        focusTerminal(address)
-    }
-
-    private func fallbackTarget(for id: String) -> String? {
-        queue.sync { fallbackTargets[id] }
-    }
-
-    private func focusTerminal(_ address: String) {
-        runDo(["agent.focus", "--terminal", address])
-    }
-
-    /// `herdr-app do`. 창을 막 띄운 직후엔 창이 아직 소켓을 열지 못해 실패할 수
-    /// 있어 짧게 재시도한다. 포커스 계열만 보내므로 재시도해도 안전하다.
-    private func runDo(_ arguments: [String]) {
         commandQueue.async {
-            let deadline = Date().addingTimeInterval(3.0)
-            repeat {
-                if ProcessRunner.exitCode(self.appURL, arguments: ["do"] + arguments, timeout: 1.0) == 0 {
-                    return
-                }
-                Thread.sleep(forTimeInterval: 0.2)
-            } while Date() < deadline
+            self.perform(["agent.focus", "--terminal", address])
+            Self.logger.notice("App 포커스: agent=\(address, privacy: .public)")
         }
+    }
+
+    /// 확인이 필요한 에이전트가 있으면 그 pane으로 옮긴다. 스페이스·탭 선택만으로는
+    /// 창 안의 pane 포커스가 바뀌지 않아, 한 스페이스뿐인 layout에서는 눌러도
+    /// 아무것도 움직이지 않기 때문이다.
+    private func focusLead(in tabs: [Tab], spaceID: String, tabID: String?) {
+        let lead = Self.leadTerminal(in: tabs)
+        if let lead {
+            perform(["agent.focus", "--terminal", lead])
+        }
+        Self.logger.notice(
+            "App 포커스: space=\(spaceID, privacy: .public) tab=\(tabID ?? "-", privacy: .public) agent=\(lead ?? "-", privacy: .public)"
+        )
+    }
+
+    /// 창이 소켓에 응답할 때까지 짧게 기다렸다가 최신 계층을 읽는다. 대상은 클릭
+    /// 시점의 폴링 결과가 아니라 누르는 순간의 계층에서 정한다.
+    private func withWindow(_ body: (WindowList) -> Void) {
+        let deadline = Date().addingTimeInterval(3.0)
+        while Date() < deadline {
+            if let window = windowList() {
+                body(window)
+                return
+            }
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+    }
+
+    /// `herdr-app do`를 한 번 실행한다. 창을 막 띄운 직후엔 창이 아직 소켓을 열지
+    /// 못해 실패할 수 있어 짧게 재시도한다. 포커스 계열만 보내므로 재시도해도 안전하다.
+    private func perform(_ arguments: [String]) {
+        let deadline = Date().addingTimeInterval(3.0)
+        repeat {
+            if ProcessRunner.exitCode(appURL, arguments: ["do"] + arguments, timeout: 1.0) == 0 {
+                return
+            }
+            Thread.sleep(forTimeInterval: 0.2)
+        } while Date() < deadline
     }
 
     private func windowList() -> WindowList? {
@@ -209,11 +239,10 @@ final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
     }
 
     /// 창이 닫혀 있을 때 코어 목록만으로 만드는 축소 계층. 코어는 스페이스·탭 ID를
-    /// 주지 않아 `where` 라벨("스페이스명 / 탭명")으로 묶는다.
-    static func buildFallback(core: [CoreTerminal]) -> (result: HerdrSnapshotResult, targets: [String: String]) {
-        var spaceNumbers: [String: Int] = [:]
+    /// 주지 않아 `where` 라벨("스페이스명 / 탭명")으로 묶고 그 라벨을 ID로 쓴다.
+    /// 클릭은 누르는 시점에 열린 창에서 라벨로 실제 대상을 다시 찾는다.
+    static func buildFallback(core: [CoreTerminal]) -> HerdrSnapshotResult {
         var tabNumbers: [String: Int] = [:]
-        var targets: [String: String] = [:]
         var agents: [AgentSlot] = []
         var workspaces: [WorkspaceInfo] = []
         var tabs: [TabInfo] = []
@@ -224,15 +253,14 @@ final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
             let spaceName = parts.count > 1
                 ? parts.dropLast().joined(separator: " / ")
                 : group.whereLabel
-            let spaceID = fallbackIDPrefix + spaceName
-            let tabID = fallbackIDPrefix + group.whereLabel
-            if spaceNumbers[spaceName] == nil {
+            let spaceID = fallbackID(spaceName)
+            let tabID = fallbackID(group.whereLabel)
+            if !workspaces.contains(where: { $0.workspaceId == spaceID }) {
                 workspaces.append(WorkspaceInfo(
                     workspaceId: spaceID,
                     label: spaceName,
                     number: workspaces.count + 1
                 ))
-                spaceNumbers[spaceName] = workspaces.count
             }
             let tabNumber = (tabNumbers[spaceName] ?? 0) + 1
             tabNumbers[spaceName] = tabNumber
@@ -260,19 +288,8 @@ final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
                 agentStatus: worstStatus(of: tabAgents).rawValue
             ))
             agents += tabAgents
-            // 축소 계층에는 스페이스·탭의 실제 ID가 없어 대표 에이전트 하나로 이동한다.
-            let lead = tabAgents
-                .sorted { $0.status.sortRank < $1.status.sortRank }
-                .first?.terminalID
-            if let lead {
-                if targets[spaceID] == nil { targets[spaceID] = lead }
-                targets[tabID] = lead
-            }
         }
-        return (
-            HerdrSnapshotResult(agents: agents, workspaces: workspaces, tabs: tabs, connection: .ok),
-            targets
-        )
+        return HerdrSnapshotResult(agents: agents, workspaces: workspaces, tabs: tabs, connection: .ok)
     }
 
     private static func agent(
@@ -342,6 +359,35 @@ final class HerdrAppClient: @unchecked Sendable, HerdrBackend {
     /// 탭 대표 상태. 주의도순(blocked → done → working → idle → unknown) 첫 값.
     private static func worstStatus(of agents: [AgentSlot]) -> AgentStatus {
         agents.map(\.status).min { $0.sortRank < $1.sortRank } ?? .idle
+    }
+
+    /// 탭들 중 클릭 시 이동할 에이전트. 사용자가 봐야 하는 상태(blocked·done·unknown)
+    /// 중 주의도가 가장 높은 하나다. 작업 중이거나 대기 중인 에이전트만 있으면 nil이라
+    /// 창이 기억하는 pane 포커스가 그대로 남는다.
+    static func leadTerminal(in tabs: [Tab]) -> String? {
+        var best: (rank: Int, terminal: String)?
+        for ref in tabs.flatMap({ flatten($0.terminals ?? []) }) {
+            guard
+                let status = AgentStatus(rawValue: ref.status ?? ""),
+                status != .idle, status != .working
+            else { continue }
+            if let current = best, current.rank <= status.sortRank { continue }
+            best = (status.sortRank, ref.terminal)
+        }
+        return best?.terminal
+    }
+
+    /// 축소 계층의 ID("where:라벨")는 실제 ID가 없어 라벨로도 대응시킨다.
+    private static func isSpace(_ space: Space, id: String) -> Bool {
+        space.id == id || fallbackID(spaceLabel(space)) == id
+    }
+
+    private static func isTab(_ tab: Tab, in space: Space, id: String) -> Bool {
+        tab.id == id || fallbackID(spaceLabel(space) + " / " + (tab.name ?? "")) == id
+    }
+
+    private static func fallbackID(_ label: String) -> String {
+        fallbackIDPrefix + label
     }
 
     private struct FallbackGroup {
