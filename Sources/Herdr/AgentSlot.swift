@@ -1,7 +1,7 @@
 import Foundation
 
-/// `herdr api snapshot` 응답의 agents 항목 하나. JSON 원문은 이 경계에서
-/// 끝내고, 뷰는 계산 속성 status만 본다.
+/// 백엔드가 보고하는 개별 에이전트 하나. TUI는 JSON 원문을 이 경계에서
+/// 끝내고, Herdr App은 `herdr-app ls` 항목에서 직접 만든다. 뷰는 계산 속성만 본다.
 struct AgentSlot: Codable, Identifiable, Equatable {
     let name: String?
     let agent: String?
@@ -20,23 +20,6 @@ struct AgentSlot: Codable, Identifiable, Equatable {
     /// 메타데이터가 심어진 pane에만 존재하는 공식 작업명. 키 자체가 없는
     /// snapshot도 있어 통째로 옵셔널로 읽는다.
     let tokens: Tokens?
-
-    /// 실측에서 name 키 자체가 없는 항목이 있었다. 키 구성이 에이전트마다
-    /// 가변이라 모든 필드를 decodeIfPresent로 읽는다.
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        name = try container.decodeIfPresent(String.self, forKey: .name)
-        agent = try container.decodeIfPresent(String.self, forKey: .agent)
-        agentStatus = try container.decodeIfPresent(String.self, forKey: .agentStatus) ?? ""
-        cwd = try container.decodeIfPresent(String.self, forKey: .cwd)
-        focused = try container.decodeIfPresent(Bool.self, forKey: .focused) ?? false
-        terminalID = try container.decodeIfPresent(String.self, forKey: .terminalID)
-        paneID = try container.decodeIfPresent(String.self, forKey: .paneID) ?? ""
-        terminalTitle = try container.decodeIfPresent(String.self, forKey: .terminalTitle)
-        workspaceId = try container.decodeIfPresent(String.self, forKey: .workspaceId)
-        tabId = try container.decodeIfPresent(String.self, forKey: .tabId)
-        tokens = try container.decodeIfPresent(Tokens.self, forKey: .tokens)
-    }
 
     /// name이 없는 항목은 terminal_id로, 그마저 없으면 pane_id로 식별한다.
     var id: String { name ?? terminalID ?? paneID }
@@ -76,6 +59,7 @@ struct AgentSlot: Codable, Identifiable, Equatable {
     /// 제목이 이 값뿐이면 작업 정보가 없어 taskTitle에서 걸러진다.
     private static let toolNameTitles: Set<String> = [
         "claude code", "codex", "gemini", "kimi", "opencode", "cursor",
+        "agy", "antigravity",
     ]
 
     enum CodingKeys: String, CodingKey {
@@ -99,10 +83,30 @@ struct AgentSlot: Codable, Identifiable, Equatable {
     }
 }
 
+extension AgentSlot {
+    /// 실측에서 name 키 자체가 없는 항목이 있었다. 키 구성이 에이전트마다
+    /// 가변이라 모든 필드를 decodeIfPresent로 읽는다. 본문 밖에 두어 백엔드가
+    /// 멤버와이즈 init으로 인스턴스를 직접 만들 수 있게 한다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        agent = try container.decodeIfPresent(String.self, forKey: .agent)
+        agentStatus = try container.decodeIfPresent(String.self, forKey: .agentStatus) ?? ""
+        cwd = try container.decodeIfPresent(String.self, forKey: .cwd)
+        focused = try container.decodeIfPresent(Bool.self, forKey: .focused) ?? false
+        terminalID = try container.decodeIfPresent(String.self, forKey: .terminalID)
+        paneID = try container.decodeIfPresent(String.self, forKey: .paneID) ?? ""
+        terminalTitle = try container.decodeIfPresent(String.self, forKey: .terminalTitle)
+        workspaceId = try container.decodeIfPresent(String.self, forKey: .workspaceId)
+        tabId = try container.decodeIfPresent(String.self, forKey: .tabId)
+        tokens = try container.decodeIfPresent(Tokens.self, forKey: .tokens)
+    }
+}
+
 /// `herdr api snapshot` 응답 래퍼(id/result.snapshot). 필요한 경로의
 /// agents·workspaces·tabs만 모델링하고 나머지 키는 Codable이 무시한다.
 /// tabs는 오래된 herdr 응답엔 키 자체가 없을 수 있어 옵셔널로 읽는다.
-/// 디코드는 HerdrClient에서만 한다.
+/// 디코드는 HerdrTUIClient에서만 한다.
 struct HerdrSnapshotResponse: Codable {
     struct Result: Codable {
         struct Snapshot: Codable {

@@ -20,7 +20,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
 /// UI 문자 키. 새 문구는 키와 표 항목을 짝으로 추가한다.
 enum AppText: CaseIterable {
-    case offline
+    case offlineMode
     case spacesHeader
     case spacesHint
     case noSpaces
@@ -31,10 +31,15 @@ enum AppText: CaseIterable {
     case languageLabel
     case languageSystemOption
     case quit
+    case modeLabel
+    case otherModePromptTitle
+    case otherModePromptMessage
+    case otherModePromptSwitch
+    case otherModePromptKeep
 
     /// 언어별 문자 표. 형식 문자(%lld)는 String(format:)에 그대로 쓴다.
     private static let table: [AppText: (ko: String, en: String)] = [
-        .offline: ("herdr 오프라인", "herdr offline"),
+        .offlineMode: ("%@ 오프라인", "%@ offline"),
         .spacesHeader: ("스페이스 %lld", "Spaces %lld"),
         .spacesHint: ("클릭하면 해당 스페이스로 이동", "Click a space to focus it"),
         .noSpaces: ("스페이스 없음", "No spaces"),
@@ -45,6 +50,14 @@ enum AppText: CaseIterable {
         .languageLabel: ("언어", "Language"),
         .languageSystemOption: ("시스템 따름", "Match system"),
         .quit: ("종료", "Quit"),
+        .modeLabel: ("모드", "Mode"),
+        .otherModePromptTitle: ("%@ 실행 감지", "%@ detected"),
+        .otherModePromptMessage: (
+            "지금은 %@ 모드입니다. %@ 실행이 감지되었습니다. 전환할까요?",
+            "Currently in %@ mode, but %@ is running. Switch now?",
+        ),
+        .otherModePromptSwitch: ("%@ 모드로 전환", "Switch to %@"),
+        .otherModePromptKeep: ("유지", "Keep current"),
     ]
 
     /// 이 언어로 쓸 문자. 표에 빠진 키는 즉시 눈에 보이는 빈 문자로 실패한다.

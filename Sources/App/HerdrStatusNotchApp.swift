@@ -50,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = SlotStore()
     private var panelController: NotchPanelController?
     private var chipBar: ChipBarManager?
+    private var modeSwitchPrompt: ModeSwitchPromptController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // plist는 일반 앱으로 두어 런치패드·아이콘에 노출하고, 런타임에
@@ -57,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         panelController = NotchPanelController(store: store)
         chipBar = ChipBarManager(store: store)
+        modeSwitchPrompt = ModeSwitchPromptController(store: store)
         store.startPolling()
     }
 }

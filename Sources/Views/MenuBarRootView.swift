@@ -13,7 +13,7 @@ struct MenuBarRootView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             if store.connection == .offline {
-                Label(store.t(.offline), systemImage: "antenna.radiowaves.left.and.right.slash")
+                Label(store.t(.offlineMode, store.mode.displayName), systemImage: "antenna.radiowaves.left.and.right.slash")
                     .foregroundStyle(ConnectionState.offline.color)
             } else {
                 VStack(alignment: .leading, spacing: 2) {
@@ -66,6 +66,19 @@ struct MenuBarRootView: View {
                         .onChange(of: startsAtLogin) { _, on in
                             LoginItemService.shared.setEnabled(on)
                         }
+                }
+                HStack {
+                    Text(store.t(.modeLabel)).font(.system(size: 13))
+                    Spacer(minLength: 8)
+                    Picker("", selection: Binding(get: { store.mode }, set: { store.pickMode($0) })) {
+                        ForEach(HerdrMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .controlSize(.small)
+                    .fixedSize()
                 }
                 HStack {
                     Text(store.t(.languageLabel)).font(.system(size: 13))

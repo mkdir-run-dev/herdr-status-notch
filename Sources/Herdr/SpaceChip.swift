@@ -40,19 +40,6 @@ struct TabInfo: Codable, Equatable, Identifiable {
         AgentStatus(rawValue: agentStatus) ?? .unknown
     }
 
-    /// 탭마다 키 구성이 가변이라 optional 필드는 전부 기본값으로 읽는다.
-    /// tab_id·workspace_id가 없는 항목은 그룹핑·포커스 대상이 될 수 없어
-    /// 아예 디코드를 실패시킨다.
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        tabId = try container.decode(String.self, forKey: .tabId)
-        workspaceId = try container.decode(String.self, forKey: .workspaceId)
-        label = try container.decodeIfPresent(String.self, forKey: .label) ?? ""
-        number = try container.decodeIfPresent(Int.self, forKey: .number) ?? 0
-        paneCount = try container.decodeIfPresent(Int.self, forKey: .paneCount) ?? 0
-        agentStatus = try container.decodeIfPresent(String.self, forKey: .agentStatus) ?? ""
-    }
-
     enum CodingKeys: String, CodingKey {
         case tabId = "tab_id"
         case workspaceId = "workspace_id"
@@ -160,5 +147,21 @@ struct SpaceChip: Equatable, Identifiable {
     var signalTaskSummary: String? {
         let titles = signalAgents.compactMap(\.taskTitle)
         return titles.isEmpty ? nil : titles.joined(separator: " · ")
+    }
+}
+
+extension TabInfo {
+    /// 탭마다 키 구성이 가변이라 optional 필드는 전부 기본값으로 읽는다.
+    /// tab_id·workspace_id가 없는 항목은 그룹핑·포커스 대상이 될 수 없어
+    /// 아예 디코드를 실패시킨다. 본문 밖에 두어 Herdr App 백엔드가 멤버와이즈
+    /// init으로 인스턴스를 직접 만들 수 있게 한다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        tabId = try container.decode(String.self, forKey: .tabId)
+        workspaceId = try container.decode(String.self, forKey: .workspaceId)
+        label = try container.decodeIfPresent(String.self, forKey: .label) ?? ""
+        number = try container.decodeIfPresent(Int.self, forKey: .number) ?? 0
+        paneCount = try container.decodeIfPresent(Int.self, forKey: .paneCount) ?? 0
+        agentStatus = try container.decodeIfPresent(String.self, forKey: .agentStatus) ?? ""
     }
 }
